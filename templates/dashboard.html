@@ -76,19 +76,19 @@
 {% block scripts %}
 {{ super() }}
 <script>
-/* Dados vindos do Flask */
-const catLabels = {{ cat_labels | tojson }};
-const catValues = {{ cat_values | tojson }};
-const langLabels = {{ lang_labels | tojson }};
-const langValues = {{ lang_values | tojson }};
-const srcLabels  = {{ src_labels  | tojson }};
-const srcValues  = {{ src_values  | tojson }};
+/* Dados vindos do Flask (usamos JSON.parse para o VSCode não dar erro) */
+const catLabels  = JSON.parse('{{ cat_labels | tojson | safe }}');
+const catValues  = JSON.parse('{{ cat_values | tojson | safe }}');
+const langLabels = JSON.parse('{{ lang_labels | tojson | safe }}');
+const langValues = JSON.parse('{{ lang_values | tojson | safe }}');
+const srcLabels  = JSON.parse('{{ src_labels | tojson | safe }}');
+const srcValues  = JSON.parse('{{ src_values | tojson | safe }}');
 
 const plotLayout = {
   paper_bgcolor: 'rgba(0,0,0,0)',
   plot_bgcolor:  'rgba(0,0,0,0)',
   font: { family: 'Outfit, sans-serif', color: '#4a5c4e' },
-  margin: { l: 8, r: 8, t: 8, b: 8 },
+  margin: { l: 20, r: 20, t: 20, b: 40 },
 };
 
 /* Top Categorias */
@@ -97,15 +97,13 @@ Plotly.newPlot('chart-cats', [{
   x: catLabels,
   y: catValues,
   marker: {
-    color: catValues,
-    colorscale: [[0,'#c8e6c9'],[1,'#1b5e20']],
-    showscale: false,
+    color: '#2b8a3e',
   },
   hovertemplate: '<b>%{x}</b><br>%{y:,} termos<extra></extra>',
 }], {
   ...plotLayout,
-  height: 220,
-  xaxis: { tickfont: { size: 10 }, gridcolor: '#f0ece4' },
+  height: 240,
+  xaxis: { tickfont: { size: 10 }, gridcolor: '#f0ece4', automargin: true },
   yaxis: { gridcolor: '#f0ece4', zeroline: false },
   bargap: 0.35,
 }, { responsive: true, displayModeBar: false });
@@ -116,7 +114,7 @@ Plotly.newPlot('chart-langs', [{
   labels: langLabels,
   values: langValues,
   hole: 0.48,
-  marker: { colors: ['#2e6b44','#4a7c5e','#81c784','#c8e6c9','#a5d6a7','#66bb6a'] },
+  marker: { colors: ['#2b8a3e','#e67700','#1864ab','#d9480f','#5c940d','#862e9c'] },
   textinfo: 'label+percent',
   textfont: { size: 11 },
   hovertemplate: '<b>%{label}</b><br>%{value:,} termos<extra></extra>',
@@ -133,10 +131,7 @@ Plotly.newPlot('chart-src', [{
   y: srcLabels,
   orientation: 'h',
   marker: {
-    color: srcValues,
-    colorscale: [[0,'#c8e6c9'],[1,'#1b5e20']],
-    showscale: false,
-    line: { width: 0 },
+    color: '#1864ab',
   },
   text: srcValues.map(v => v.toLocaleString()),
   textposition: 'outside',
@@ -144,7 +139,7 @@ Plotly.newPlot('chart-src', [{
   hovertemplate: '<b>%{y}</b><br>%{x:,} termos<extra></extra>',
 }], {
   ...plotLayout,
-  height: 320,
+  height: 340,
   xaxis: { gridcolor: '#f0ece4', tickfont: { size: 10 }, zeroline: false },
   yaxis: { gridcolor: 'rgba(0,0,0,0)', tickfont: { size: 11, color: '#4a5c4e' }, automargin: true },
   bargap: 0.3,
