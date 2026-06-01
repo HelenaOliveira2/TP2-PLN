@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block head %}<title>IR + QA — MedLex Explorer</title>{% endblock %}
+
+{% block body %}
+
+<div class="page-header">
+  <div class="page-badge" style="background:#fce4ec;border-color:#f48fb1;color:#8b1a35;">
+    Em desenvolvimento
+  </div>
+  <h1>Information Retrieval + Question Answering</h1>
+  <p>Pesquisa de artigos científicos e perguntas em linguagem natural</p>
+</div>
+
+<div class="info-bar" style="margin-bottom:28px;">
+  <div class="info-dot" style="background:#8b1a35;"></div>
+  Esta funcionalidade está a ser implementada — Fase 3 e 4 do projeto.
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+  <div style="background:var(--white);border:1px solid var(--cream-border);
+              border-top:3px solid #3b5998;border-radius:var(--radius-lg);padding:24px;">
+    <h3 style="margin-bottom:8px;">Information Retrieval</h3>
+    <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:16px;">
+      Dado um conjunto de artigos científicos médicos, o sistema identifica os documentos
+      mais relevantes para a tua pesquisa utilizando o modelo <strong>TF-IDF</strong> ou
+      <strong>SBERT</strong>.
+    </p>
+    <div class="badge">TF-IDF</div>
+    <div class="badge">SBERT</div>
+    <div class="badge badge-amber">Brevemente</div>
+  </div>
+
+  <div style="background:var(--white);border:1px solid var(--cream-border);
+              border-top:3px solid #8b1a35;border-radius:var(--radius-lg);padding:24px;">
+    <h3 style="margin-bottom:8px;">Question Answering</h3>
+    <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:16px;">
+      Dado um artigo retornado pelo IR, o modelo <strong>BERT</strong> do HuggingFace
+      responde a perguntas formuladas em linguagem natural sobre o conteúdo do artigo.
+    </p>
+    <div class="badge">BERT</div>
+    <div class="badge">HuggingFace</div>
+    <div class="badge badge-amber">Brevemente</div>
+  </div>
+</div>
+
+{% endblock %}

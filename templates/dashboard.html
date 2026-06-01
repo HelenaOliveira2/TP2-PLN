@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block head %}
+  <title>Dashboard — MedLex Explorer</title>
+  <!-- Plotly CDN para gráficos -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+{% endblock %}
+
+{% block body %}
+
+<div class="page-header">
+  <div class="page-badge">
+    <div style="width:6px;height:6px;background:var(--forest);border-radius:50%;"></div>
+    Ao vivo
+  </div>
+  <h1>Dashboard</h1>
+  <p>Visão geral do dicionário médico multilingue</p>
+</div>
+
+<!-- ── Métricas ──────────────────────────────────────────────────────────── -->
+<div class="metric-grid">
+  <div class="metric-card">
+    <div class="metric-badge" style="background:#2e6b4418;color:#2e6b44;">T</div>
+    <div class="metric-number">{{ "{:,}".format(stats.total) }}</div>
+    <div class="metric-label">Termos Totais</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-badge" style="background:#3b599818;color:#3b5998;">D</div>
+    <div class="metric-number">{{ "{:,}".format(stats.com_definicao) }}</div>
+    <div class="metric-label">Com Definição</div>
+    <div class="metric-sub">{{ stats.pct_definicao }}% cobertura</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-badge" style="background:#8a5e0018;color:#8a5e00;">S</div>
+    <div class="metric-number">{{ "{:,}".format(stats.com_sinonimos) }}</div>
+    <div class="metric-label">Com Sinónimos</div>
+    <div class="metric-sub">{{ stats.pct_sinonimos }}% cobertura</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-badge" style="background:#8b1a3518;color:#8b1a35;">EN</div>
+    <div class="metric-number">{{ "{:,}".format(stats.com_ingles) }}</div>
+    <div class="metric-label">Inglês</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-badge" style="background:#5e3b1a18;color:#5e3b1a;">ES</div>
+    <div class="metric-number">{{ "{:,}".format(stats.com_espanhol) }}</div>
+    <div class="metric-label">Espanhol</div>
+  </div>
+</div>
+
+<!-- ── Gráficos lado a lado ──────────────────────────────────────────────── -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px;">
+
+  <!-- Top Categorias (barras) -->
+  <div style="background:var(--white);border:1px solid var(--cream-border);border-radius:var(--radius-lg);padding:20px 20px 10px;">
+    <div class="section-lbl">Top categorias</div>
+    <div id="chart-cats"></div>
+  </div>
+
+  <!-- Distribuição línguas (pie) -->
+  <div style="background:var(--white);border:1px solid var(--cream-border);border-radius:var(--radius-lg);padding:20px 20px 10px;">
+    <div class="section-lbl">Cobertura de línguas</div>
+    <div id="chart-langs"></div>
+  </div>
+
+</div>
+
+<!-- ── Distribuição por fonte (barras horizontais) ─────────────────────── -->
+<div style="background:var(--white);border:1px solid var(--cream-border);border-radius:var(--radius-lg);padding:20px 20px 12px;margin-bottom:32px;">
+  <div class="section-lbl">Distribuição por fonte</div>
+  <div id="chart-src"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+/* Dados vindos do Flask */
+const catLabels = {{ cat_labels | tojson }};
+const catValues = {{ cat_values | tojson }};
+const langLabels = {{ lang_labels | tojson }};
+const langValues = {{ lang_values | tojson }};
+const srcLabels  = {{ src_labels  | tojson }};
+const srcValues  = {{ src_values  | tojson }};
+
+const plotLayout = {
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  plot_bgcolor:  'rgba(0,0,0,0)',
+  font: { family: 'Outfit, sans-serif', color: '#4a5c4e' },
+  margin: { l: 8, r: 8, t: 8, b: 8 },
+};
+
+/* Top Categorias */
+Plotly.newPlot('chart-cats', [{
+  type: 'bar',
+  x: catLabels,
+  y: catValues,
+  marker: {
+    color: catValues,
+    colorscale: [[0,'#c8e6c9'],[1,'#1b5e20']],
+    showscale: false,
+  },
+  hovertemplate: '<b>%{x}</b><br>%{y:,} termos<extra></extra>',
+}], {
+  ...plotLayout,
+  height: 220,
+  xaxis: { tickfont: { size: 10 }, gridcolor: '#f0ece4' },
+  yaxis: { gridcolor: '#f0ece4', zeroline: false },
+  bargap: 0.35,
+}, { responsive: true, displayModeBar: false });
+
+/* Cobertura de línguas */
+Plotly.newPlot('chart-langs', [{
+  type: 'pie',
+  labels: langLabels,
+  values: langValues,
+  hole: 0.48,
+  marker: { colors: ['#2e6b44','#4a7c5e','#81c784','#c8e6c9','#a5d6a7','#66bb6a'] },
+  textinfo: 'label+percent',
+  textfont: { size: 11 },
+  hovertemplate: '<b>%{label}</b><br>%{value:,} termos<extra></extra>',
+}], {
+  ...plotLayout,
+  height: 220,
+  showlegend: false,
+}, { responsive: true, displayModeBar: false });
+
+/* Distribuição por fonte */
+Plotly.newPlot('chart-src', [{
+  type: 'bar',
+  x: srcValues,
+  y: srcLabels,
+  orientation: 'h',
+  marker: {
+    color: srcValues,
+    colorscale: [[0,'#c8e6c9'],[1,'#1b5e20']],
+    showscale: false,
+    line: { width: 0 },
+  },
+  text: srcValues.map(v => v.toLocaleString()),
+  textposition: 'outside',
+  textfont: { size: 11, color: '#7a8c7c' },
+  hovertemplate: '<b>%{y}</b><br>%{x:,} termos<extra></extra>',
+}], {
+  ...plotLayout,
+  height: 320,
+  xaxis: { gridcolor: '#f0ece4', tickfont: { size: 10 }, zeroline: false },
+  yaxis: { gridcolor: 'rgba(0,0,0,0)', tickfont: { size: 11, color: '#4a5c4e' }, automargin: true },
+  bargap: 0.3,
+}, { responsive: true, displayModeBar: false });
+</script>
+{% endblock %}

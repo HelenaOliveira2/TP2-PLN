@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block head %}<title>Gestão — MedLex Explorer</title>{% endblock %}
+
+{% block body %}
+
+<div class="page-header">
+  <h1>Gestão do Dicionário</h1>
+  <p>Adiciona, edita ou remove termos. Todas as alterações são guardadas automaticamente.</p>
+</div>
+
+<div class="tab-container">
+  <!-- Abas -->
+  <div class="tabs">
+    <button class="tab-btn {{ 'active' if active_tab == 'add' else '' }}"
+            data-tab="tab-add">Adicionar Termo</button>
+    <button class="tab-btn {{ 'active' if active_tab == 'edit' else '' }}"
+            data-tab="tab-edit">Editar Termo</button>
+    <button class="tab-btn {{ 'active' if active_tab == 'delete' else '' }}"
+            data-tab="tab-delete">Apagar Termo</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB 1 — ADICIONAR
+  ══════════════════════════════════════════ -->
+  <div class="tab-pane {{ 'active' if active_tab == 'add' else '' }}" id="tab-add">
+    <div class="form-card">
+      <form method="POST" action="{{ url_for('gestao_add') }}">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Termo Principal *</label>
+            <input type="text" name="termo" required placeholder="ex: Fémur">
+          </div>
+          <div class="form-group">
+            <label>Género</label>
+            <select name="genero">
+              <option value="">— sem género —</option>
+              <option value="masculino">Masculino</option>
+              <option value="feminino">Feminino</option>
+              <option value="neutro">Neutro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Categorias</label>
+            <input type="text" name="categorias" placeholder="ex: Anatomia Ossos (separadas por espaço)">
+            <span class="form-hint">Separadas por espaço</span>
+          </div>
+          <div class="form-group">
+            <label>Sinónimos</label>
+            <input type="text" name="sinonimos" placeholder="ex: Osso da coxa, Thigh bone">
+            <span class="form-hint">Separados por vírgula</span>
+          </div>
+          <div class="form-group">
+            <label>Siglas</label>
+            <input type="text" name="siglas" placeholder="ex: GABA">
+            <span class="form-hint">Separadas por vírgula</span>
+          </div>
+          <div class="form-group">
+            <label>Termos Relacionados</label>
+            <input type="text" name="termos_rel" placeholder="ex: Tíbia, Rótula">
+            <span class="form-hint">Separados por vírgula</span>
+          </div>
+          <div class="form-group full">
+            <label>Definição</label>
+            <textarea name="definicao" placeholder="Escreve a definição do termo..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Tradução PT</label>
+            <input type="text" name="pt" placeholder="ex: fémur">
+          </div>
+          <div class="form-group">
+            <label>Tradução EN</label>
+            <input type="text" name="en" placeholder="ex: femur">
+          </div>
+          <div class="form-group">
+            <label>Tradução ES</label>
+            <input type="text" name="es" placeholder="ex: fémur">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Guardar Novo Termo</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB 2 — EDITAR
+  ══════════════════════════════════════════ -->
+  <div class="tab-pane {{ 'active' if active_tab == 'edit' else '' }}" id="tab-edit">
+
+    <!-- Pesquisa do termo a editar -->
+    <form method="GET" action="{{ url_for('gestao') }}" style="margin-bottom:20px;">
+      <input type="hidden" name="tab" value="edit">
+      <div class="search-bar">
+        <input class="search-input" type="text" name="edit"
+               value="{{ edit_search }}"
+               placeholder="Pesquisar termo para editar...">
+        <button class="btn btn-ghost" type="submit">Procurar</button>
+      </div>
+    </form>
+
+    {% if edit_matches %}
+      <!-- Seletor de correspondências -->
+      <form method="GET" action="{{ url_for('gestao') }}" style="margin-bottom:20px;">
+        <input type="hidden" name="tab" value="edit">
+        <input type="hidden" name="edit" value="{{ edit_search }}">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select class="filter-select" name="edit_key" style="flex:1;" onchange="this.form.submit()">
+            {% for k in edit_matches %}
+              <option value="{{ k }}" {{ 'selected' if edit_key == k }}>
+                {{ data.get(k, {}).get('termo_principal', k) }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+    {% endif %}
+
+    {% if edit_entry %}
+      <div class="form-card">
+        <div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--cream-border);">
+          <span style="font-size:0.78rem;color:var(--text-faint);">A editar: </span>
+          <strong style="color:var(--text-dark);">{{ edit_entry.get('termo_principal', edit_key) }}</strong>
+        </div>
+        <form method="POST" action="{{ url_for('gestao_update') }}">
+          <input type="hidden" name="key" value="{{ edit_key }}">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Termo Principal</label>
+              <input type="text" name="termo" value="{{ edit_entry.get('termo_principal', '') }}">
+            </div>
+            <div class="form-group">
+              <label>Género</label>
+              <select name="genero">
+                <option value="">— sem género —</option>
+                {% for g in ['masculino', 'feminino', 'neutro'] %}
+                  <option value="{{ g }}" {{ 'selected' if edit_entry.get('genero') == g }}>
+                    {{ g.capitalize() }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Categorias</label>
+              <input type="text" name="categorias"
+                     value="{{ edit_entry.get('categorias', []) | join(' ') }}">
+              <span class="form-hint">Separadas por espaço</span>
+            </div>
+            <div class="form-group">
+              <label>Sinónimos</label>
+              <input type="text" name="sinonimos"
+                     value="{{ edit_entry.get('sinonimos', []) | join(', ') }}">
+              <span class="form-hint">Separados por vírgula</span>
+            </div>
+            <div class="form-group">
+              <label>Siglas</label>
+              <input type="text" name="siglas"
+                     value="{{ edit_entry.get('siglas', []) | join(', ') }}">
+            </div>
+            <div class="form-group">
+              <label>Termos Relacionados</label>
+              <input type="text" name="termos_rel"
+                     value="{{ edit_entry.get('termos_relacionados', []) | join(', ') }}">
+            </div>
+            <div class="form-group full">
+              <label>Definição</label>
+              <textarea name="definicao">{{ edit_entry.get('definicoes', [''])[0] }}</textarea>
+            </div>
+            {% set trad = edit_entry.get('traducoes', {}) %}
+            <div class="form-group">
+              <label>Tradução PT</label>
+              <input type="text" name="pt" value="{{ trad.get('pt', []) | join(', ') }}">
+            </div>
+            <div class="form-group">
+              <label>Tradução EN</label>
+              <input type="text" name="en" value="{{ trad.get('en', []) | join(', ') }}">
+            </div>
+            <div class="form-group">
+              <label>Tradução ES</label>
+              <input type="text" name="es" value="{{ trad.get('es', []) | join(', ') }}">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit">Guardar Alterações</button>
+        </form>
+      </div>
+    {% elif edit_search and not edit_matches %}
+      <div class="empty-state" style="padding:32px;">
+        <h3>Nenhum termo encontrado</h3>
+        <p>Tenta uma palavra diferente.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TAB 3 — APAGAR
+  ══════════════════════════════════════════ -->
+  <div class="tab-pane {{ 'active' if active_tab == 'delete' else '' }}" id="tab-delete">
+
+    <div class="alert alert-warning">
+      ⚠️ Esta ação é <strong>permanente</strong> e não pode ser desfeita.
+    </div>
+
+    <form method="GET" action="{{ url_for('gestao') }}" style="margin-bottom:20px;">
+      <input type="hidden" name="tab" value="delete">
+      <div class="search-bar">
+        <input class="search-input" type="text" name="del"
+               value="{{ del_search }}"
+               placeholder="Pesquisar termo para apagar...">
+        <button class="btn btn-ghost" type="submit">Procurar</button>
+      </div>
+    </form>
+
+    {% if del_matches %}
+      <form method="GET" action="{{ url_for('gestao') }}" style="margin-bottom:20px;">
+        <input type="hidden" name="tab" value="delete">
+        <input type="hidden" name="del" value="{{ del_search }}">
+        <select class="filter-select" name="del_key" style="min-width:260px;" onchange="this.form.submit()">
+          {% for k in del_matches %}
+            <option value="{{ k }}" {{ 'selected' if del_key == k }}>
+              {{ data.get(k, {}).get('termo_principal', k) }}
+            </option>
+          {% endfor %}
+        </select>
+      </form>
+    {% endif %}
+
+    {% if del_entry %}
+      {% set de = del_entry %}
+      <div class="delete-preview">
+        <div style="font-weight:600;color:var(--text-dark);margin-bottom:4px;">
+          {{ de.get('termo_principal', del_key) }}
+        </div>
+        <div style="font-size:0.78rem;color:var(--text-muted);">
+          {{ de.get('categorias', []) | join(' · ') }}
+        </div>
+        {% if de.get('definicoes') %}
+          <div style="font-size:0.83rem;color:var(--text-mid);margin-top:8px;">
+            {{ de.get('definicoes')[0][:200] }}…
+          </div>
+        {% endif %}
+      </div>
+
+      <form method="POST" action="{{ url_for('gestao_delete') }}">
+        <input type="hidden" name="key" value="{{ del_key }}">
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;
+                      color:var(--text-mid);margin-bottom:16px;cursor:pointer;">
+          <input type="checkbox" name="confirm" value="1" required
+                 style="accent-color:var(--danger);width:16px;height:16px;">
+          Confirmo que quero apagar
+          <strong>"{{ del_entry.get('termo_principal', del_key) }}"</strong>
+          permanentemente.
+        </label>
+        <button class="btn btn-danger" type="submit">Apagar Definitivamente</button>
+      </form>
+    {% elif del_search and not del_matches %}
+      <div class="empty-state" style="padding:32px;">
+        <h3>Nenhum termo encontrado</h3>
+        <p>Tenta uma palavra diferente.</p>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

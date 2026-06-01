@@ -1,0 +1,33 @@
+{% extends 'layout.html' %}
+
+
+{% block head %}
+    <title> Lista de Conceitos </title>
+{% endblock %}
+
+
+{% block body %}
+
+<h1> Adicionar Conceito </h1>
+
+<form action="/conceitos" method="POST">
+  <div class="mb-3">
+    <label for="designacao" class="form-label">Designação</label>
+    <input type="text" class="form-control" id="designacao" name="designacao">
+  </div>
+    <div class="mb-3">
+    <label for="descricao" class="form-label">Descrição</label>
+    <input type="text" class="form-control" id="descricao" name="descricao">
+  </div>
+  <button type="submit" class="btn btn-primary">Adicionar</button>
+</form>
+
+<h1> Lista de Conceitos </h1>
+
+<div class="list-group">
+        {% for conceito in conceitos %}
+            <a href="/conceitos/{{conceito}}" class="list-group-item list-group-item-action">{{conceito}}</a>
+        {% endfor %}
+</div>
+
+{% endblock %}

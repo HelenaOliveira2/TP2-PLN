@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block head %}<title>Início — MedLex Explorer</title>{% endblock %}
+
+{% block body %}
+
+<!-- ── Hero ──────────────────────────────────────────────────────────────── -->
+<div class="hero">
+  <div class="hero-left">
+    <div class="hero-tag">
+      <div style="width:6px;height:6px;background:#f0a500;border-radius:50%;"></div>
+      Dicionário médico multilingue
+    </div>
+    <h1>Terminologia<br>clínica <em>explorada</em></h1>
+    <p>
+      Pesquisa, gere e descobre relações entre termos em
+      português, inglês e espanhol com suporte de IA.
+    </p>
+  </div>
+
+  <div class="hero-stats">
+    <div class="stat-card" style="margin-bottom:10px;">
+      <div class="stat-lbl">Termos totais</div>
+      <div class="stat-val">{{ "{:,}".format(stats.total) }}</div>
+    </div>
+    <div class="stat-grid-2">
+      <div class="stat-card">
+        <div class="stat-lbl">Com definição</div>
+        <div class="stat-val" style="font-size:1.5rem;">
+          {{ stats.pct_definicao }}<span style="font-size:0.9rem;color:#4a7c5e;">%</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-lbl">Línguas</div>
+        <div class="stat-val" style="font-size:1.5rem;">{{ stats.total_linguas }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr style="border:none;border-top:1px solid var(--cream-border);margin:0 0 32px;">
+
+<!-- ── Módulos ────────────────────────────────────────────────────────────── -->
+<div class="section-lbl">Módulos disponíveis</div>
+
+<div class="module-grid">
+  <a href="{{ url_for('dashboard') }}" class="module-card"
+     style="border-top:3px solid #2e6b4455;">
+    <div class="module-icon-box" style="background:#eaf4ec;">📊</div>
+    <h3>Dashboard</h3>
+    <p>Estatísticas e visão geral do dataset</p>
+    <div class="module-tag" style="color:#2e6b44;">Gráficos interativos</div>
+  </a>
+
+  <a href="{{ url_for('pesquisa') }}" class="module-card"
+     style="border-top:3px solid #3b599855;">
+    <div class="module-icon-box" style="background:#e8f0fe;">🔍</div>
+    <h3>Pesquisa</h3>
+    <p>Filtra e explora termos por idioma ou texto livre</p>
+    <div class="module-tag" style="color:#3b5998;">Busca + filtros</div>
+  </a>
+
+  <a href="{{ url_for('gestao') }}" class="module-card"
+     style="border-top:3px solid #8a5e0055;">
+    <div class="module-icon-box" style="background:#fff3e0;">✏️</div>
+    <h3>Gestão</h3>
+    <p>Adiciona, edita e remove termos do dicionário</p>
+    <div class="module-tag" style="color:#8a5e00;">CRUD completo</div>
+  </a>
+
+  <a href="{{ url_for('ir_qa') }}" class="module-card"
+     style="border-top:3px solid #8b1a3555;">
+    <div class="module-icon-box" style="background:#fce4ec;">🤖</div>
+    <h3>IR + QA</h3>
+    <p>Pesquisa de artigos e perguntas à IA</p>
+    <div class="module-tag" style="color:#8b1a35;">LLM-powered</div>
+  </a>
+</div>
+
+<div style="margin-top:28px;">
+  <div class="info-bar">
+    <div class="info-dot"></div>
+    Sistema operacional — clica num módulo acima para começar.
+  </div>
+</div>
+
+{% endblock %}
