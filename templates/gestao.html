@@ -26,13 +26,19 @@
     <div class="form-card">
       <form method="POST" action="{{ url_for('gestao_add') }}">
         <div class="form-grid">
-          <div class="form-group">
+          <div class="form-group" style="position:relative;">
             <label>Termo Principal *</label>
-            <input type="text" name="termo" required placeholder="ex: Fémur">
+            <div style="display:flex;gap:8px;">
+              <input type="text" name="termo" id="add-termo-input" required placeholder="ex: Fémur" style="flex:1;">
+              <button type="button" class="btn btn-ghost" id="btn-autofill" style="white-space:nowrap;padding:0 12px;border:1px solid var(--cream-border);border-radius:var(--radius-md);font-size:0.8rem;background:var(--cream-bg);">
+                ✨ Auto-preencher
+              </button>
+            </div>
+            <span id="autofill-status" style="position:absolute;bottom:-18px;left:0;font-size:0.7rem;color:var(--text-faint);display:none;"></span>
           </div>
           <div class="form-group">
             <label>Género</label>
-            <select name="genero">
+            <select name="genero" id="add-genero-input">
               <option value="">— sem género —</option>
               <option value="masculino">Masculino</option>
               <option value="feminino">Feminino</option>
@@ -41,39 +47,39 @@
           </div>
           <div class="form-group">
             <label>Categorias</label>
-            <input type="text" name="categorias" placeholder="ex: Anatomia Ossos (separadas por espaço)">
+            <input type="text" name="categorias" id="add-categorias-input" placeholder="ex: Anatomia Ossos (separadas por espaço)">
             <span class="form-hint">Separadas por espaço</span>
           </div>
           <div class="form-group">
             <label>Sinónimos</label>
-            <input type="text" name="sinonimos" placeholder="ex: Osso da coxa, Thigh bone">
+            <input type="text" name="sinonimos" id="add-sinonimos-input" placeholder="ex: Osso da coxa, Thigh bone">
             <span class="form-hint">Separados por vírgula</span>
           </div>
           <div class="form-group">
             <label>Siglas</label>
-            <input type="text" name="siglas" placeholder="ex: GABA">
+            <input type="text" name="siglas" id="add-siglas-input" placeholder="ex: GABA">
             <span class="form-hint">Separadas por vírgula</span>
           </div>
           <div class="form-group">
             <label>Termos Relacionados</label>
-            <input type="text" name="termos_rel" placeholder="ex: Tíbia, Rótula">
+            <input type="text" name="termos_rel" id="add-termos-rel-input" placeholder="ex: Tíbia, Rótula">
             <span class="form-hint">Separados por vírgula</span>
           </div>
           <div class="form-group full">
             <label>Definição</label>
-            <textarea name="definicao" placeholder="Escreve a definição do termo..."></textarea>
+            <textarea name="definicao" id="add-definicao-input" placeholder="Escreve a definição do termo..."></textarea>
           </div>
           <div class="form-group">
             <label>Tradução PT</label>
-            <input type="text" name="pt" placeholder="ex: fémur">
+            <input type="text" name="pt" id="add-pt-input" placeholder="ex: fémur">
           </div>
           <div class="form-group">
             <label>Tradução EN</label>
-            <input type="text" name="en" placeholder="ex: femur">
+            <input type="text" name="en" id="add-en-input" placeholder="ex: femur">
           </div>
           <div class="form-group">
             <label>Tradução ES</label>
-            <input type="text" name="es" placeholder="ex: fémur">
+            <input type="text" name="es" id="add-es-input" placeholder="ex: fémur">
           </div>
         </div>
         <button class="btn btn-primary btn-block" type="submit">Guardar Novo Termo</button>
@@ -123,13 +129,19 @@
         <form method="POST" action="{{ url_for('gestao_update') }}">
           <input type="hidden" name="key" value="{{ edit_key }}">
           <div class="form-grid">
-            <div class="form-group">
+            <div class="form-group" style="position:relative;">
               <label>Termo Principal</label>
-              <input type="text" name="termo" value="{{ edit_entry.get('termo_principal', '') }}">
+              <div style="display:flex;gap:8px;">
+                <input type="text" name="termo" id="edit-termo-input" value="{{ edit_entry.get('termo_principal', '') }}" style="flex:1;">
+                <button type="button" class="btn btn-ghost" id="btn-edit-autofill" style="white-space:nowrap;padding:0 12px;border:1px solid var(--cream-border);border-radius:var(--radius-md);font-size:0.8rem;background:var(--cream-bg);">
+                  ✨ Auto-preencher
+                </button>
+              </div>
+              <span id="edit-autofill-status" style="position:absolute;bottom:-18px;left:0;font-size:0.7rem;color:var(--text-faint);display:none;"></span>
             </div>
             <div class="form-group">
               <label>Género</label>
-              <select name="genero">
+              <select name="genero" id="edit-genero-input">
                 <option value="">— sem género —</option>
                 {% for g in ['masculino', 'feminino', 'neutro'] %}
                   <option value="{{ g }}" {{ 'selected' if edit_entry.get('genero') == g }}>
@@ -140,42 +152,42 @@
             </div>
             <div class="form-group">
               <label>Categorias</label>
-              <input type="text" name="categorias"
+              <input type="text" name="categorias" id="edit-categorias-input"
                      value="{{ edit_entry.get('categorias', []) | join(' ') }}">
               <span class="form-hint">Separadas por espaço</span>
             </div>
             <div class="form-group">
               <label>Sinónimos</label>
-              <input type="text" name="sinonimos"
+              <input type="text" name="sinonimos" id="edit-sinonimos-input"
                      value="{{ edit_entry.get('sinonimos', []) | join(', ') }}">
               <span class="form-hint">Separados por vírgula</span>
             </div>
             <div class="form-group">
               <label>Siglas</label>
-              <input type="text" name="siglas"
+              <input type="text" name="siglas" id="edit-siglas-input"
                      value="{{ edit_entry.get('siglas', []) | join(', ') }}">
             </div>
             <div class="form-group">
               <label>Termos Relacionados</label>
-              <input type="text" name="termos_rel"
+              <input type="text" name="termos_rel" id="edit-termos-rel-input"
                      value="{{ edit_entry.get('termos_relacionados', []) | join(', ') }}">
             </div>
             <div class="form-group full">
               <label>Definição</label>
-              <textarea name="definicao">{{ edit_entry.get('definicoes', [''])[0] }}</textarea>
+              <textarea name="definicao" id="edit-definicao-input">{{ edit_entry.get('definicoes', [''])[0] }}</textarea>
             </div>
             {% set trad = edit_entry.get('traducoes', {}) %}
             <div class="form-group">
               <label>Tradução PT</label>
-              <input type="text" name="pt" value="{{ trad.get('pt', []) | join(', ') }}">
+              <input type="text" name="pt" id="edit-pt-input" value="{{ trad.get('pt', []) | join(', ') }}">
             </div>
             <div class="form-group">
               <label>Tradução EN</label>
-              <input type="text" name="en" value="{{ trad.get('en', []) | join(', ') }}">
+              <input type="text" name="en" id="edit-en-input" value="{{ trad.get('en', []) | join(', ') }}">
             </div>
             <div class="form-group">
               <label>Tradução ES</label>
-              <input type="text" name="es" value="{{ trad.get('es', []) | join(', ') }}">
+              <input type="text" name="es" id="edit-es-input" value="{{ trad.get('es', []) | join(', ') }}">
             </div>
           </div>
           <button class="btn btn-primary btn-block" type="submit">Guardar Alterações</button>
@@ -259,4 +271,137 @@
   </div>
 
 </div>
+
+{% block scripts %}
+{{ super() }}
+<script>
+function autofillFields(prefix, term, statusElement) {
+    statusElement.textContent = 'A procurar na API... ⏳';
+    statusElement.style.display = 'inline';
+    statusElement.style.color = 'var(--text-mid)';
+    
+    fetch(`/api/enrich?term=${encodeURIComponent(term)}`)
+        .then(response => {
+            if (!response.ok) throw new Error('Erro na API');
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                statusElement.textContent = 'Não foram encontrados dados.';
+                statusElement.style.color = 'var(--danger)';
+                return;
+            }
+            
+            // Definição (apenas preenche se estiver vazia ou se o utilizador confirmar)
+            const defInput = document.getElementById(`${prefix}-definicao-input`);
+            if (data.definicao && defInput) {
+                if (!defInput.value || confirm('Substituir a definição existente pela da API?')) {
+                    defInput.value = data.definicao;
+                }
+            }
+            
+            // Sinónimos
+            const synInput = document.getElementById(`${prefix}-sinonimos-input`);
+            if (data.sinonimos && data.sinonimos.length > 0 && synInput) {
+                const newSyns = data.sinonimos.join(', ');
+                if (!synInput.value) {
+                    synInput.value = newSyns;
+                } else if (confirm('Adicionar novos sinónimos aos existentes?')) {
+                    const existing = synInput.value.split(',').map(s => s.trim()).filter(Boolean);
+                    data.sinonimos.forEach(s => {
+                        if (!existing.includes(s)) existing.push(s);
+                    });
+                    synInput.value = existing.join(', ');
+                }
+            }
+            
+            // Categorias
+            const catInput = document.getElementById(`${prefix}-categorias-input`);
+            if (data.categorias && data.categorias.length > 0 && catInput) {
+                const newCats = data.categorias.join(' ');
+                if (!catInput.value) {
+                    catInput.value = newCats;
+                } else if (confirm('Adicionar novas categorias às existentes?')) {
+                    const existing = catInput.value.split(/\s+/).filter(Boolean);
+                    data.categorias.forEach(c => {
+                        const cleanC = c.replace(/\s+/g, '_'); // substituir espaços internos por _
+                        if (!existing.includes(cleanC)) existing.push(cleanC);
+                    });
+                    catInput.value = existing.join(' ');
+                }
+            }
+            
+            // Traduções
+            const ptInput = document.getElementById(`${prefix}-pt-input`);
+            const enInput = document.getElementById(`${prefix}-en-input`);
+            const esInput = document.getElementById(`${prefix}-es-input`);
+            
+            if (data.traducoes) {
+                if (ptInput && !ptInput.value) {
+                    ptInput.value = (data.traducoes.pt && data.traducoes.pt.length > 0) 
+                        ? data.traducoes.pt.join(', ') 
+                        : term.toLowerCase();
+                }
+                
+                if (enInput && data.traducoes.en && data.traducoes.en.length > 0) {
+                    if (!enInput.value) {
+                        enInput.value = data.traducoes.en.join(', ');
+                    } else if (confirm('Adicionar novas traduções em Inglês às existentes?')) {
+                        const existing = enInput.value.split(',').map(t => t.trim()).filter(Boolean);
+                        data.traducoes.en.forEach(t => {
+                            if (!existing.includes(t)) existing.push(t);
+                        });
+                        enInput.value = existing.join(', ');
+                    }
+                }
+                
+                if (esInput && data.traducoes.es && data.traducoes.es.length > 0) {
+                    if (!esInput.value) {
+                        esInput.value = data.traducoes.es.join(', ');
+                    } else if (confirm('Adicionar novas traduções em Espanhol às existentes?')) {
+                        const existing = esInput.value.split(',').map(t => t.trim()).filter(Boolean);
+                        data.traducoes.es.forEach(t => {
+                            if (!existing.includes(t)) existing.push(t);
+                        });
+                        esInput.value = existing.join(', ');
+                    }
+                }
+            }
+            
+            statusElement.textContent = 'Preenchido com sucesso! ✨';
+            statusElement.style.color = '#2e7d32'; // forest green
+            setTimeout(() => { statusElement.style.display = 'none'; }, 5000);
+        })
+        .catch(err => {
+            console.error(err);
+            statusElement.textContent = 'Erro ou termo não encontrado.';
+            statusElement.style.color = 'var(--danger)';
+        });
+}
+
+const btnAdd = document.getElementById('btn-autofill');
+if (btnAdd) {
+    btnAdd.addEventListener('click', () => {
+        const term = document.getElementById('add-termo-input').value.trim();
+        if (!term) {
+            alert('Por favor, escreve um termo antes de tentar preencher.');
+            return;
+        }
+        autofillFields('add', term, document.getElementById('autofill-status'));
+    });
+}
+
+const btnEdit = document.getElementById('btn-edit-autofill');
+if (btnEdit) {
+    btnEdit.addEventListener('click', () => {
+        const term = document.getElementById('edit-termo-input').value.trim();
+        if (!term) {
+            alert('Por favor, escreve um termo antes de tentar preencher.');
+            return;
+        }
+        autofillFields('edit', term, document.getElementById('edit-autofill-status'));
+    });
+}
+</script>
+{% endblock %}
 {% endblock %}

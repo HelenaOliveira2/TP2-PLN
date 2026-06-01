@@ -4,22 +4,55 @@
 {% block body %}
 
 <div class="page-header">
-  <div class="page-badge" style="background:#fce4ec;border-color:#f48fb1;color:#8b1a35;">
-    Em desenvolvimento
+  <div class="page-badge" style="background:var(--forest-pale);border-color:var(--forest-mid);color:var(--forest);">
+    Fase 3 & 4
   </div>
   <h1>Information Retrieval + Question Answering</h1>
   <p>Pesquisa de artigos científicos e perguntas em linguagem natural</p>
 </div>
 
-<div class="info-bar" style="margin-bottom:28px;">
-  <div class="info-dot" style="background:#8b1a35;"></div>
-  Esta funcionalidade está a ser implementada — Fase 3 e 4 do projeto.
+<!-- ── Painel de Status da Coleção de Documentos ───────────────────────────── -->
+<div style="background:var(--white);border:1px solid var(--cream-border);border-radius:var(--radius-lg);padding:24px;margin-bottom:28px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
+    <div>
+      <h3 style="font-family:var(--font-serif);font-size:1.25rem;color:var(--text-dark);margin-bottom:6px;">Coleção de Artigos Científicos</h3>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin:0;">
+        Atualmente tens <strong id="articles-count-badge" style="color:var(--forest);font-size:1rem;">{{ articles_count }}</strong> artigos descarregados na tua base de dados local (<span style="font-family:monospace;font-size:0.8rem;background:var(--cream);padding:2px 6px;border-radius:4px;">data/artigos.json</span>).
+      </p>
+    </div>
+    
+    <!-- Painel de Scraping -->
+    <div style="margin-left:auto;background:var(--cream);border:1px solid var(--cream-border);border-radius:var(--radius-md);padding:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div style="font-size:0.82rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:4px;">
+        📥 Importar do PubMed:
+      </div>
+      <form id="pubmed-scrape-form" style="display:flex;align-items:center;gap:8px;margin:0;">
+        <input type="text" name="query" id="scrape-query" required placeholder="ex: diabetes, cancer" 
+               style="padding:6px 12px;border:1px solid var(--cream-border);border-radius:var(--radius-sm);font-size:0.8rem;width:150px;outline:none;">
+        <select name="limit" id="scrape-limit" style="padding:6px 12px;border:1px solid var(--cream-border);border-radius:var(--radius-sm);font-size:0.8rem;outline:none;background:#fff;cursor:pointer;">
+          <option value="3">3 artigos</option>
+          <option value="5" selected>5 artigos</option>
+          <option value="10">10 artigos</option>
+          <option value="20">20 artigos</option>
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm" id="btn-scrape">
+          Descarregar
+        </button>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Status do scraping -->
+  <div id="scrape-status" style="margin-top:14px;font-size:0.82rem;display:none;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius-sm);">
+    <span class="spinner" style="display:inline-block;width:14px;height:14px;border:2px solid var(--text-faint);border-top-color:var(--forest);border-radius:50%;animation:spin 1s linear infinite;"></span>
+    <span id="scrape-status-text">A descarregar artigos do PubMed...</span>
+  </div>
 </div>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
   <div style="background:var(--white);border:1px solid var(--cream-border);
               border-top:3px solid #3b5998;border-radius:var(--radius-lg);padding:24px;">
-    <h3 style="margin-bottom:8px;">Information Retrieval</h3>
+    <h3 style="margin-bottom:8px;">Information Retrieval (IR)</h3>
     <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:16px;">
       Dado um conjunto de artigos científicos médicos, o sistema identifica os documentos
       mais relevantes para a tua pesquisa utilizando o modelo <strong>TF-IDF</strong> ou
@@ -27,20 +60,108 @@
     </p>
     <div class="badge">TF-IDF</div>
     <div class="badge">SBERT</div>
-    <div class="badge badge-amber">Brevemente</div>
+    <div class="badge badge-amber" style="background:#eaf4ec;border-color:var(--forest-mid);color:var(--forest);">Coleção Ligada</div>
   </div>
 
   <div style="background:var(--white);border:1px solid var(--cream-border);
               border-top:3px solid #8b1a35;border-radius:var(--radius-lg);padding:24px;">
-    <h3 style="margin-bottom:8px;">Question Answering</h3>
+    <h3 style="margin-bottom:8px;">Question Answering (QA)</h3>
     <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:16px;">
       Dado um artigo retornado pelo IR, o modelo <strong>BERT</strong> do HuggingFace
       responde a perguntas formuladas em linguagem natural sobre o conteúdo do artigo.
     </p>
     <div class="badge">BERT</div>
     <div class="badge">HuggingFace</div>
-    <div class="badge badge-amber">Brevemente</div>
+    <div class="badge badge-amber">Próxima Fase</div>
   </div>
 </div>
 
+<style>
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+const form = document.getElementById('pubmed-scrape-form');
+const statusDiv = document.getElementById('scrape-status');
+const statusText = document.getElementById('scrape-status-text');
+const btnScrape = document.getElementById('btn-scrape');
+const countBadge = document.getElementById('articles-count-badge');
+
+if (form) {
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const query = document.getElementById('scrape-query').value.trim();
+        const limit = document.getElementById('scrape-limit').value;
+        
+        if (!query) return;
+        
+        // Desativar botão e campo
+        btnScrape.disabled = true;
+        btnScrape.style.opacity = 0.5;
+        
+        statusDiv.style.display = 'flex';
+        statusDiv.style.background = 'var(--forest-pale)';
+        statusDiv.style.border = '1px solid var(--forest-mid)';
+        statusDiv.style.color = 'var(--forest)';
+        statusText.textContent = `A contactar o PubMed do NCBI e descarregar artigos sobre "${query}"... ⏳`;
+        const spinner = statusDiv.querySelector('.spinner');
+        if (spinner) spinner.style.display = 'inline-block';
+        
+        const formData = new FormData();
+        formData.append('query', query);
+        formData.append('limit', limit);
+        
+        fetch('/api/scrape', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Erro na importação');
+            return response.json();
+        })
+        .then(data => {
+            btnScrape.disabled = false;
+            btnScrape.style.opacity = 1;
+            
+            if (data.success) {
+                countBadge.textContent = data.total_articles;
+                statusText.textContent = `Sucesso! Foram adicionados ${data.new_added} novos artigos à coleção (Total: ${data.total_articles}). ✨`;
+                statusDiv.style.background = 'var(--forest-pale)';
+                statusDiv.style.border = '1px solid var(--forest-mid)';
+                statusDiv.style.color = 'var(--forest)';
+                
+                // Limpar campo de pesquisa
+                document.getElementById('scrape-query').value = '';
+            } else {
+                statusText.textContent = 'Erro ao processar artigos.';
+                statusDiv.style.color = 'var(--danger)';
+            }
+            const spinner = statusDiv.querySelector('.spinner');
+            if (spinner) spinner.style.display = 'none';
+            
+            // Ocultar após 6 segundos
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 6000);
+        })
+        .catch(err => {
+            console.error(err);
+            btnScrape.disabled = false;
+            btnScrape.style.opacity = 1;
+            statusText.textContent = 'Erro ao contactar a API do PubMed ou processar XML.';
+            statusDiv.style.background = 'var(--danger-pale)';
+            statusDiv.style.border = '1px solid #fca5a5';
+            statusDiv.style.color = 'var(--danger)';
+            const spinner = statusDiv.querySelector('.spinner');
+            if (spinner) spinner.style.display = 'none';
+        });
+    });
+}
+</script>
 {% endblock %}

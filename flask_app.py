@@ -12,6 +12,8 @@ from utils.data_manager import (
     get_data, get_stats, get_all_categories, get_all_sources,
     add_term, update_term, delete_term
 )
+from utils.enricher import enrich_term_data
+from utils.scraper import scrape_and_save_articles, load_articles
 
 app = Flask(__name__)
 app.secret_key = "medlex-secret-2025"   # necessário para flash messages
@@ -323,12 +325,59 @@ def gestao_delete():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# IR + QA (placeholder — Fase 3 e 4)
+# API de Enriquecimento
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/enrich")
+def api_enrich():
+    term = request.args.get("term", "").strip()
+    if not term:
+        return {"error": "Nenhum termo fornecido"}, 400
+    try:
+        enrichment = enrich_term_data(term)
+        return enrichment
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# IR + QA (Fase 3 e 4)
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.get("/ir_qa")
 def ir_qa():
-    return render_template("ir_qa.html", active_page="ir_qa")
+    articles = load_articles()
+    articles_count = len(articles)
+    return render_template("ir_qa.html", active_page="ir_qa", articles_count=articles_count)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# API de Web Scraping do PubMed
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/scrape")
+def api_scrape():
+    query = request.form.get("query", "").strip()
+    limit = request.form.get("limit", "5").strip()
+    
+    if not query:
+        return {"error": "Termo de pesquisa obrigatório"}, 400
+        
+    try:
+        max_results = int(limit)
+    except ValueError:
+        max_results = 5
+        
+    try:
+        new_added = scrape_and_save_articles(query, max_results)
+        articles = load_articles()
+        return {
+            "success": True,
+            "new_added": new_added,
+            "total_articles": len(articles)
+        }
+    except Exception as e:
+        return {"error": str(e)}, 500
 
 
 # ══════════════════════════════════════════════════════════════════════════════
