@@ -12,6 +12,7 @@ from utils.enricher import enrich_term_data
 from utils.scraper import scrape_and_save_articles, load_articles
 from utils.train_w2v import train_w2v_model
 from utils.search_engine import search_articles, SBERTSearch
+from utils.qa_engine import answer_question
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Configurações e Dados (Antigo data_manager.py)
@@ -444,7 +445,7 @@ def api_enrich():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# IR + QA (Fase 3 e 4)
+# IR + QA 
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.get("/ir_qa")
@@ -510,6 +511,25 @@ def api_scrape():
             "new_added": new_added,
             "total_articles": len(articles)
         }
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# API de Question Answering (Fase 4)
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/qa")
+def api_qa():
+    context = request.form.get("context", "").strip()
+    question = request.form.get("question", "").strip()
+    
+    if not context or not question:
+        return {"error": "O contexto e a pergunta são obrigatórios."}, 400
+        
+    try:
+        resultado = answer_question(context, question)
+        return resultado
     except Exception as e:
         return {"error": str(e)}, 500
 

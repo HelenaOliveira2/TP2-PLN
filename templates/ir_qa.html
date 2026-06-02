@@ -4,9 +4,7 @@
 {% block body %}
 
 <div class="page-header">
-  <div class="page-badge" style="background:var(--forest-pale);border-color:var(--forest-mid);color:var(--forest);">
-    Fase 3 & 4
-  </div>
+
   <h1>Information Retrieval + Question Answering</h1>
   <p>Pesquisa de artigos científicos médicos e perguntas com inteligência artificial</p>
 </div>
@@ -162,19 +160,45 @@
         </button>
       </div>
 
-      <!-- Formulário de QA interativo (Brevemente / Preparação para Fase 4) -->
+      <!-- Formulário de QA interativo (Fase 4) -->
       <div class="qa-panel" id="qa-panel-{{ art.pmid }}"
         style="display:none;background:var(--cream);border:1px solid var(--cream-border);border-radius:var(--radius-md);padding:16px;margin-top:14px;">
         <div
           style="font-weight:600;font-size:0.85rem;color:var(--text-dark);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-          <span>Pergunta à Inteligência Artificial (Modelo BERT):</span>
+          <span>Pergunta à Inteligência Artificial (Multilingue):</span>
         </div>
-        <div style="display:flex;gap:8px;">
-          <input type="text" placeholder="Escreve uma pergunta em linguagem natural sobre o conteúdo deste artigo..."
-            class="search-input" style="background:#fff;margin:0;font-size:0.82rem;padding:8px 12px;flex:1;">
-          <button class="btn btn-primary btn-sm" disabled style="background:var(--text-muted);cursor:not-allowed;">
-            Perguntar (Brevemente)
+
+        <form class="qa-form" data-pmid="{{ art.pmid }}" style="display:flex;gap:8px;margin-bottom:0;">
+          <!-- O contexto oculto -->
+          <input type="hidden" name="context" value="{{ art.resumo }}">
+          <input type="text" name="question" required
+            placeholder="Escreve a tua pergunta em Português sobre este artigo..."
+            class="search-input qa-question-input"
+            style="background:#fff;margin:0;font-size:0.82rem;padding:8px 12px;flex:1;">
+          <button type="submit" class="btn btn-primary btn-sm qa-submit-btn">
+            Perguntar
           </button>
+        </form>
+
+        <!-- Área para mostrar a resposta ou spinner -->
+        <div class="qa-result" id="qa-result-{{ art.pmid }}"
+          style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--cream-border);">
+          <div class="qa-spinner"
+            style="display:none; align-items:center; gap:8px; font-size:0.8rem; color:var(--text-mid);">
+            <span class="spinner"
+              style="display:inline-block;width:14px;height:14px;border:2px solid var(--text-faint);border-top-color:var(--forest);border-radius:50%;animation:spin 1s linear infinite;"></span>
+            A processar resposta com o modelo XLM-RoBERTa...
+          </div>
+          <div class="qa-answer-box" style="display:none;">
+            <div
+              style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">
+              Resposta Extraída</div>
+            <div class="qa-answer-text"
+              style="font-weight:500; color:var(--forest); font-size:0.95rem; line-height:1.4;"></div>
+            <div style="font-size:0.7rem; color:var(--text-faint); margin-top:6px;">
+              Confiança do modelo: <span class="qa-score-text" style="font-weight:600;"></span>%
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -353,5 +377,76 @@
         });
     });
   }
+
+  // 5. Lógica do Question Answering (QA - Fase 4)
+  document.querySelectorAll('.qa-form').forEach(form => {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const pmid = form.dataset.pmid;
+      const question = form.querySelector('input[name="question"]').value.trim();
+      const context = form.querySelector('input[name="context"]').value.trim();
+
+      if (!question || !context) return;
+
+      const btn = form.querySelector('.qa-submit-btn');
+      const resultContainer = document.getElementById(`qa-result-${pmid}`);
+      const spinnerDiv = resultContainer.querySelector('.qa-spinner');
+      const answerBox = resultContainer.querySelector('.qa-answer-box');
+      const answerText = resultContainer.querySelector('.qa-answer-text');
+      const scoreText = resultContainer.querySelector('.qa-score-text');
+
+      // Estado de loading
+      btn.disabled = true;
+      btn.style.opacity = 0.5;
+      resultContainer.style.display = 'block';
+      spinnerDiv.style.display = 'flex';
+      answerBox.style.display = 'none';
+
+      const formData = new FormData();
+      formData.append('context', context);
+      formData.append('question', question);
+
+      fetch('/api/qa', {
+        method: 'POST',
+        body: formData
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Erro na API QA');
+          return response.json();
+        })
+        .then(data => {
+          spinnerDiv.style.display = 'none';
+          btn.disabled = false;
+          btn.style.opacity = 1;
+
+          if (data.error) {
+            answerBox.style.display = 'block';
+            answerText.textContent = `Erro: ${data.error}`;
+            answerText.style.color = 'var(--danger)';
+            scoreText.textContent = '0';
+          } else {
+            answerBox.style.display = 'block';
+            answerText.style.color = 'var(--forest)';
+            if (data.answer) {
+              answerText.textContent = `"${data.answer}"`;
+            } else {
+              answerText.textContent = "Não foi possível extrair uma resposta do texto para essa pergunta.";
+              answerText.style.color = 'var(--text-mid)';
+            }
+            scoreText.textContent = data.score;
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          spinnerDiv.style.display = 'none';
+          btn.disabled = false;
+          btn.style.opacity = 1;
+          answerBox.style.display = 'block';
+          answerText.textContent = "Erro de comunicação com o servidor.";
+          answerText.style.color = 'var(--danger)';
+        });
+    });
+  });
 </script>
 {% endblock %}
