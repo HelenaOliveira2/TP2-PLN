@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block head %}<title>Gestão — MedLex Explorer</title>{% endblock %}
+{% block head %}Gestão — MedLex Explorer{% endblock %}
 
 {% block body %}
 
@@ -11,12 +11,9 @@
 <div class="tab-container">
   <!-- Abas -->
   <div class="tabs">
-    <button class="tab-btn {{ 'active' if active_tab == 'add' else '' }}"
-            data-tab="tab-add">Adicionar Termo</button>
-    <button class="tab-btn {{ 'active' if active_tab == 'edit' else '' }}"
-            data-tab="tab-edit">Editar Termo</button>
-    <button class="tab-btn {{ 'active' if active_tab == 'delete' else '' }}"
-            data-tab="tab-delete">Apagar Termo</button>
+    <button class="tab-btn {{ 'active' if active_tab == 'add' else '' }}" data-tab="tab-add">Adicionar Termo</button>
+    <button class="tab-btn {{ 'active' if active_tab == 'edit' else '' }}" data-tab="tab-edit">Editar Termo</button>
+    <button class="tab-btn {{ 'active' if active_tab == 'delete' else '' }}" data-tab="tab-delete">Apagar Termo</button>
   </div>
 
   <!-- ══════════════════════════════════════════
@@ -30,11 +27,13 @@
             <label>Termo Principal *</label>
             <div style="display:flex;gap:8px;">
               <input type="text" name="termo" id="add-termo-input" required placeholder="ex: Fémur" style="flex:1;">
-              <button type="button" class="btn btn-ghost" id="btn-autofill" style="white-space:nowrap;padding:0 12px;border:1px solid var(--cream-border);border-radius:var(--radius-md);font-size:0.8rem;background:var(--cream-bg);">
-                ✨ Auto-preencher
+              <button type="button" class="btn btn-ghost" id="btn-autofill"
+                style="white-space:nowrap;padding:0 12px;border:1px solid var(--cream-border);border-radius:var(--radius-md);font-size:0.8rem;background:var(--cream-bg);">
+                <i class="fi fi-rr-sparkles"></i> Auto-preencher
               </button>
             </div>
-            <span id="autofill-status" style="position:absolute;bottom:-18px;left:0;font-size:0.7rem;color:var(--text-faint);display:none;"></span>
+            <span id="autofill-status"
+              style="position:absolute;bottom:-18px;left:0;font-size:0.7rem;color:var(--text-faint);display:none;"></span>
           </div>
           <div class="form-group">
             <label>Género</label>
@@ -47,7 +46,8 @@
           </div>
           <div class="form-group">
             <label>Categorias</label>
-            <input type="text" name="categorias" id="add-categorias-input" placeholder="ex: Anatomia Ossos (separadas por espaço)">
+            <input type="text" name="categorias" id="add-categorias-input"
+              placeholder="ex: Anatomia Ossos (separadas por espaço)">
             <span class="form-hint">Separadas por espaço</span>
           </div>
           <div class="form-group">
@@ -67,7 +67,8 @@
           </div>
           <div class="form-group full">
             <label>Definição</label>
-            <textarea name="definicao" id="add-definicao-input" placeholder="Escreve a definição do termo..."></textarea>
+            <textarea name="definicao" id="add-definicao-input"
+              placeholder="Escreve a definição do termo..."></textarea>
           </div>
           <div class="form-group">
             <label>Tradução PT</label>
@@ -96,108 +97,110 @@
     <form method="GET" action="{{ url_for('gestao') }}" style="margin-bottom:20px;">
       <input type="hidden" name="tab" value="edit">
       <div class="search-bar">
-        <input class="search-input" type="text" name="edit"
-               value="{{ edit_search }}"
-               placeholder="Pesquisar termo para editar...">
+        <input class="search-input" type="text" name="edit" value="{{ edit_search }}"
+          placeholder="Pesquisar termo para editar...">
         <button class="btn btn-ghost" type="submit">Procurar</button>
       </div>
     </form>
 
     {% if edit_matches %}
-      <!-- Seletor de correspondências -->
-      <form method="GET" action="{{ url_for('gestao') }}" style="margin-bottom:20px;">
-        <input type="hidden" name="tab" value="edit">
-        <input type="hidden" name="edit" value="{{ edit_search }}">
-        <div style="display:flex;gap:10px;align-items:center;">
-          <select class="filter-select" name="edit_key" style="flex:1;" onchange="this.form.submit()">
-            {% for k in edit_matches %}
-              <option value="{{ k }}" {{ 'selected' if edit_key == k }}>
-                {{ data.get(k, {}).get('termo_principal', k) }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-      </form>
+    <!-- Seletor de correspondências -->
+    <form method="GET" action="{{ url_for('gestao') }}" style="margin-bottom:20px;">
+      <input type="hidden" name="tab" value="edit">
+      <input type="hidden" name="edit" value="{{ edit_search }}">
+      <div style="display:flex;gap:10px;align-items:center;">
+        <select class="filter-select" name="edit_key" style="flex:1;" onchange="this.form.submit()">
+          {% for k in edit_matches %}
+          <option value="{{ k }}" {{ 'selected' if edit_key==k }}>
+            {{ data.get(k, {}).get('termo_principal', k) }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
     {% endif %}
 
     {% if edit_entry %}
-      <div class="form-card">
-        <div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--cream-border);">
-          <span style="font-size:0.78rem;color:var(--text-faint);">A editar: </span>
-          <strong style="color:var(--text-dark);">{{ edit_entry.get('termo_principal', edit_key) }}</strong>
-        </div>
-        <form method="POST" action="{{ url_for('gestao_update') }}">
-          <input type="hidden" name="key" value="{{ edit_key }}">
-          <div class="form-grid">
-            <div class="form-group" style="position:relative;">
-              <label>Termo Principal</label>
-              <div style="display:flex;gap:8px;">
-                <input type="text" name="termo" id="edit-termo-input" value="{{ edit_entry.get('termo_principal', '') }}" style="flex:1;">
-                <button type="button" class="btn btn-ghost" id="btn-edit-autofill" style="white-space:nowrap;padding:0 12px;border:1px solid var(--cream-border);border-radius:var(--radius-md);font-size:0.8rem;background:var(--cream-bg);">
-                  ✨ Auto-preencher
-                </button>
-              </div>
-              <span id="edit-autofill-status" style="position:absolute;bottom:-18px;left:0;font-size:0.7rem;color:var(--text-faint);display:none;"></span>
+    <div class="form-card">
+      <div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--cream-border);">
+        <span style="font-size:0.78rem;color:var(--text-faint);">A editar: </span>
+        <strong style="color:var(--text-dark);">{{ edit_entry.get('termo_principal', edit_key) }}</strong>
+      </div>
+      <form method="POST" action="{{ url_for('gestao_update') }}">
+        <input type="hidden" name="key" value="{{ edit_key }}">
+        <div class="form-grid">
+          <div class="form-group" style="position:relative;">
+            <label>Termo Principal</label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" name="termo" id="edit-termo-input" value="{{ edit_entry.get('termo_principal', '') }}"
+                style="flex:1;">
+              <button type="button" class="btn btn-ghost" id="btn-edit-autofill"
+                style="white-space:nowrap;padding:0 12px;border:1px solid var(--cream-border);border-radius:var(--radius-md);font-size:0.8rem;background:var(--cream-bg);">
+                <i class="fi fi-rr-sparkles"></i> Auto-preencher
+              </button>
             </div>
-            <div class="form-group">
-              <label>Género</label>
-              <select name="genero" id="edit-genero-input">
-                <option value="">— sem género —</option>
-                {% for g in ['masculino', 'feminino', 'neutro'] %}
-                  <option value="{{ g }}" {{ 'selected' if edit_entry.get('genero') == g }}>
-                    {{ g.capitalize() }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Categorias</label>
-              <input type="text" name="categorias" id="edit-categorias-input"
-                     value="{{ edit_entry.get('categorias', []) | join(' ') }}">
-              <span class="form-hint">Separadas por espaço</span>
-            </div>
-            <div class="form-group">
-              <label>Sinónimos</label>
-              <input type="text" name="sinonimos" id="edit-sinonimos-input"
-                     value="{{ edit_entry.get('sinonimos', []) | join(', ') }}">
-              <span class="form-hint">Separados por vírgula</span>
-            </div>
-            <div class="form-group">
-              <label>Siglas</label>
-              <input type="text" name="siglas" id="edit-siglas-input"
-                     value="{{ edit_entry.get('siglas', []) | join(', ') }}">
-            </div>
-            <div class="form-group">
-              <label>Termos Relacionados</label>
-              <input type="text" name="termos_rel" id="edit-termos-rel-input"
-                     value="{{ edit_entry.get('termos_relacionados', []) | join(', ') }}">
-            </div>
-            <div class="form-group full">
-              <label>Definição</label>
-              <textarea name="definicao" id="edit-definicao-input">{{ edit_entry.get('definicoes', [''])[0] }}</textarea>
-            </div>
-            {% set trad = edit_entry.get('traducoes', {}) %}
-            <div class="form-group">
-              <label>Tradução PT</label>
-              <input type="text" name="pt" id="edit-pt-input" value="{{ trad.get('pt', []) | join(', ') }}">
-            </div>
-            <div class="form-group">
-              <label>Tradução EN</label>
-              <input type="text" name="en" id="edit-en-input" value="{{ trad.get('en', []) | join(', ') }}">
-            </div>
-            <div class="form-group">
-              <label>Tradução ES</label>
-              <input type="text" name="es" id="edit-es-input" value="{{ trad.get('es', []) | join(', ') }}">
-            </div>
+            <span id="edit-autofill-status"
+              style="position:absolute;bottom:-18px;left:0;font-size:0.7rem;color:var(--text-faint);display:none;"></span>
           </div>
-          <button class="btn btn-primary btn-block" type="submit">Guardar Alterações</button>
-        </form>
-      </div>
+          <div class="form-group">
+            <label>Género</label>
+            <select name="genero" id="edit-genero-input">
+              <option value="">— sem género —</option>
+              {% for g in ['masculino', 'feminino', 'neutro'] %}
+              <option value="{{ g }}" {{ 'selected' if edit_entry.get('genero')==g }}>
+                {{ g.capitalize() }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Categorias</label>
+            <input type="text" name="categorias" id="edit-categorias-input"
+              value="{{ edit_entry.get('categorias', []) | join(' ') }}">
+            <span class="form-hint">Separadas por espaço</span>
+          </div>
+          <div class="form-group">
+            <label>Sinónimos</label>
+            <input type="text" name="sinonimos" id="edit-sinonimos-input"
+              value="{{ edit_entry.get('sinonimos', []) | join(', ') }}">
+            <span class="form-hint">Separados por vírgula</span>
+          </div>
+          <div class="form-group">
+            <label>Siglas</label>
+            <input type="text" name="siglas" id="edit-siglas-input"
+              value="{{ edit_entry.get('siglas', []) | join(', ') }}">
+          </div>
+          <div class="form-group">
+            <label>Termos Relacionados</label>
+            <input type="text" name="termos_rel" id="edit-termos-rel-input"
+              value="{{ edit_entry.get('termos_relacionados', []) | join(', ') }}">
+          </div>
+          <div class="form-group full">
+            <label>Definição</label>
+            <textarea name="definicao" id="edit-definicao-input">{{ edit_entry.get('definicoes', [''])[0] }}</textarea>
+          </div>
+          {% set trad = edit_entry.get('traducoes', {}) %}
+          <div class="form-group">
+            <label>Tradução PT</label>
+            <input type="text" name="pt" id="edit-pt-input" value="{{ trad.get('pt', []) | join(', ') }}">
+          </div>
+          <div class="form-group">
+            <label>Tradução EN</label>
+            <input type="text" name="en" id="edit-en-input" value="{{ trad.get('en', []) | join(', ') }}">
+          </div>
+          <div class="form-group">
+            <label>Tradução ES</label>
+            <input type="text" name="es" id="edit-es-input" value="{{ trad.get('es', []) | join(', ') }}">
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Guardar Alterações</button>
+      </form>
+    </div>
     {% elif edit_search and not edit_matches %}
-      <div class="empty-state" style="padding:32px;">
-        <h3>Nenhum termo encontrado</h3>
-        <p>Tenta uma palavra diferente.</p>
-      </div>
+    <div class="empty-state" style="padding:32px;">
+      <h3>Nenhum termo encontrado</h3>
+      <p>Tenta uma palavra diferente.</p>
+    </div>
     {% endif %}
   </div>
 
@@ -207,66 +210,65 @@
   <div class="tab-pane {{ 'active' if active_tab == 'delete' else '' }}" id="tab-delete">
 
     <div class="alert alert-warning">
-      ⚠️ Esta ação é <strong>permanente</strong> e não pode ser desfeita.
+      <i class="fi fi-rs-triangle-warning"></i> Esta ação é <strong>permanente</strong> e não pode ser desfeita.
     </div>
 
     <form method="GET" action="{{ url_for('gestao') }}" style="margin-bottom:20px;">
       <input type="hidden" name="tab" value="delete">
       <div class="search-bar">
-        <input class="search-input" type="text" name="del"
-               value="{{ del_search }}"
-               placeholder="Pesquisar termo para apagar...">
+        <input class="search-input" type="text" name="del" value="{{ del_search }}"
+          placeholder="Pesquisar termo para apagar...">
         <button class="btn btn-ghost" type="submit">Procurar</button>
       </div>
     </form>
 
     {% if del_matches %}
-      <form method="GET" action="{{ url_for('gestao') }}" style="margin-bottom:20px;">
-        <input type="hidden" name="tab" value="delete">
-        <input type="hidden" name="del" value="{{ del_search }}">
-        <select class="filter-select" name="del_key" style="min-width:260px;" onchange="this.form.submit()">
-          {% for k in del_matches %}
-            <option value="{{ k }}" {{ 'selected' if del_key == k }}>
-              {{ data.get(k, {}).get('termo_principal', k) }}
-            </option>
-          {% endfor %}
-        </select>
-      </form>
+    <form method="GET" action="{{ url_for('gestao') }}" style="margin-bottom:20px;">
+      <input type="hidden" name="tab" value="delete">
+      <input type="hidden" name="del" value="{{ del_search }}">
+      <select class="filter-select" name="del_key" style="min-width:260px;" onchange="this.form.submit()">
+        {% for k in del_matches %}
+        <option value="{{ k }}" {{ 'selected' if del_key==k }}>
+          {{ data.get(k, {}).get('termo_principal', k) }}
+        </option>
+        {% endfor %}
+      </select>
+    </form>
     {% endif %}
 
     {% if del_entry %}
-      {% set de = del_entry %}
-      <div class="delete-preview">
-        <div style="font-weight:600;color:var(--text-dark);margin-bottom:4px;">
-          {{ de.get('termo_principal', del_key) }}
-        </div>
-        <div style="font-size:0.78rem;color:var(--text-muted);">
-          {{ de.get('categorias', []) | join(' · ') }}
-        </div>
-        {% if de.get('definicoes') %}
-          <div style="font-size:0.83rem;color:var(--text-mid);margin-top:8px;">
-            {{ de.get('definicoes')[0][:200] }}…
-          </div>
-        {% endif %}
+    {% set de = del_entry %}
+    <div class="delete-preview">
+      <div style="font-weight:600;color:var(--text-dark);margin-bottom:4px;">
+        {{ de.get('termo_principal', del_key) }}
       </div>
+      <div style="font-size:0.78rem;color:var(--text-muted);">
+        {{ de.get('categorias', []) | join(' · ') }}
+      </div>
+      {% if de.get('definicoes') %}
+      <div style="font-size:0.83rem;color:var(--text-mid);margin-top:8px;">
+        {{ de.get('definicoes')[0][:200] }}…
+      </div>
+      {% endif %}
+    </div>
 
-      <form method="POST" action="{{ url_for('gestao_delete') }}">
-        <input type="hidden" name="key" value="{{ del_key }}">
-        <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;
+    <form method="POST" action="{{ url_for('gestao_delete') }}">
+      <input type="hidden" name="key" value="{{ del_key }}">
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;
                       color:var(--text-mid);margin-bottom:16px;cursor:pointer;">
-          <input type="checkbox" name="confirm" value="1" required
-                 style="accent-color:var(--danger);width:16px;height:16px;">
-          Confirmo que quero apagar
-          <strong>"{{ del_entry.get('termo_principal', del_key) }}"</strong>
-          permanentemente.
-        </label>
-        <button class="btn btn-danger" type="submit">Apagar Definitivamente</button>
-      </form>
+        <input type="checkbox" name="confirm" value="1" required
+          style="accent-color:var(--danger);width:16px;height:16px;">
+        Confirmo que quero apagar
+        <strong>"{{ del_entry.get('termo_principal', del_key) }}"</strong>
+        permanentemente.
+      </label>
+      <button class="btn btn-danger" type="submit">Apagar Definitivamente</button>
+    </form>
     {% elif del_search and not del_matches %}
-      <div class="empty-state" style="padding:32px;">
-        <h3>Nenhum termo encontrado</h3>
-        <p>Tenta uma palavra diferente.</p>
-      </div>
+    <div class="empty-state" style="padding:32px;">
+      <h3>Nenhum termo encontrado</h3>
+      <p>Tenta uma palavra diferente.</p>
+    </div>
     {% endif %}
   </div>
 
@@ -275,133 +277,133 @@
 {% block scripts %}
 {{ super() }}
 <script>
-function autofillFields(prefix, term, statusElement) {
-    statusElement.textContent = 'A procurar na API... ⏳';
+  function autofillFields(prefix, term, statusElement) {
+    statusElement.textContent = 'A procurar na API... ';
     statusElement.style.display = 'inline';
     statusElement.style.color = 'var(--text-mid)';
-    
+
     fetch(`/api/enrich?term=${encodeURIComponent(term)}`)
-        .then(response => {
-            if (!response.ok) throw new Error('Erro na API');
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                statusElement.textContent = 'Não foram encontrados dados.';
-                statusElement.style.color = 'var(--danger)';
-                return;
-            }
-            
-            // Definição (apenas preenche se estiver vazia ou se o utilizador confirmar)
-            const defInput = document.getElementById(`${prefix}-definicao-input`);
-            if (data.definicao && defInput) {
-                if (!defInput.value || confirm('Substituir a definição existente pela da API?')) {
-                    defInput.value = data.definicao;
-                }
-            }
-            
-            // Sinónimos
-            const synInput = document.getElementById(`${prefix}-sinonimos-input`);
-            if (data.sinonimos && data.sinonimos.length > 0 && synInput) {
-                const newSyns = data.sinonimos.join(', ');
-                if (!synInput.value) {
-                    synInput.value = newSyns;
-                } else if (confirm('Adicionar novos sinónimos aos existentes?')) {
-                    const existing = synInput.value.split(',').map(s => s.trim()).filter(Boolean);
-                    data.sinonimos.forEach(s => {
-                        if (!existing.includes(s)) existing.push(s);
-                    });
-                    synInput.value = existing.join(', ');
-                }
-            }
-            
-            // Categorias
-            const catInput = document.getElementById(`${prefix}-categorias-input`);
-            if (data.categorias && data.categorias.length > 0 && catInput) {
-                const newCats = data.categorias.join(' ');
-                if (!catInput.value) {
-                    catInput.value = newCats;
-                } else if (confirm('Adicionar novas categorias às existentes?')) {
-                    const existing = catInput.value.split(/\s+/).filter(Boolean);
-                    data.categorias.forEach(c => {
-                        const cleanC = c.replace(/\s+/g, '_'); // substituir espaços internos por _
-                        if (!existing.includes(cleanC)) existing.push(cleanC);
-                    });
-                    catInput.value = existing.join(' ');
-                }
-            }
-            
-            // Traduções
-            const ptInput = document.getElementById(`${prefix}-pt-input`);
-            const enInput = document.getElementById(`${prefix}-en-input`);
-            const esInput = document.getElementById(`${prefix}-es-input`);
-            
-            if (data.traducoes) {
-                if (ptInput && !ptInput.value) {
-                    ptInput.value = (data.traducoes.pt && data.traducoes.pt.length > 0) 
-                        ? data.traducoes.pt.join(', ') 
-                        : term.toLowerCase();
-                }
-                
-                if (enInput && data.traducoes.en && data.traducoes.en.length > 0) {
-                    if (!enInput.value) {
-                        enInput.value = data.traducoes.en.join(', ');
-                    } else if (confirm('Adicionar novas traduções em Inglês às existentes?')) {
-                        const existing = enInput.value.split(',').map(t => t.trim()).filter(Boolean);
-                        data.traducoes.en.forEach(t => {
-                            if (!existing.includes(t)) existing.push(t);
-                        });
-                        enInput.value = existing.join(', ');
-                    }
-                }
-                
-                if (esInput && data.traducoes.es && data.traducoes.es.length > 0) {
-                    if (!esInput.value) {
-                        esInput.value = data.traducoes.es.join(', ');
-                    } else if (confirm('Adicionar novas traduções em Espanhol às existentes?')) {
-                        const existing = esInput.value.split(',').map(t => t.trim()).filter(Boolean);
-                        data.traducoes.es.forEach(t => {
-                            if (!existing.includes(t)) existing.push(t);
-                        });
-                        esInput.value = existing.join(', ');
-                    }
-                }
-            }
-            
-            statusElement.textContent = 'Preenchido com sucesso! ✨';
-            statusElement.style.color = '#2e7d32'; // forest green
-            setTimeout(() => { statusElement.style.display = 'none'; }, 5000);
-        })
-        .catch(err => {
-            console.error(err);
-            statusElement.textContent = 'Erro ou termo não encontrado.';
-            statusElement.style.color = 'var(--danger)';
-        });
-}
+      .then(response => {
+        if (!response.ok) throw new Error('Erro na API');
+        return response.json();
+      })
+      .then(data => {
+        if (data.error) {
+          statusElement.textContent = 'Não foram encontrados dados.';
+          statusElement.style.color = 'var(--danger)';
+          return;
+        }
 
-const btnAdd = document.getElementById('btn-autofill');
-if (btnAdd) {
+        // Definição (apenas preenche se estiver vazia ou se o utilizador confirmar)
+        const defInput = document.getElementById(`${prefix}-definicao-input`);
+        if (data.definicao && defInput) {
+          if (!defInput.value || confirm('Substituir a definição existente pela da API?')) {
+            defInput.value = data.definicao;
+          }
+        }
+
+        // Sinónimos
+        const synInput = document.getElementById(`${prefix}-sinonimos-input`);
+        if (data.sinonimos && data.sinonimos.length > 0 && synInput) {
+          const newSyns = data.sinonimos.join(', ');
+          if (!synInput.value) {
+            synInput.value = newSyns;
+          } else if (confirm('Adicionar novos sinónimos aos existentes?')) {
+            const existing = synInput.value.split(',').map(s => s.trim()).filter(Boolean);
+            data.sinonimos.forEach(s => {
+              if (!existing.includes(s)) existing.push(s);
+            });
+            synInput.value = existing.join(', ');
+          }
+        }
+
+        // Categorias
+        const catInput = document.getElementById(`${prefix}-categorias-input`);
+        if (data.categorias && data.categorias.length > 0 && catInput) {
+          const newCats = data.categorias.join(' ');
+          if (!catInput.value) {
+            catInput.value = newCats;
+          } else if (confirm('Adicionar novas categorias às existentes?')) {
+            const existing = catInput.value.split(/\s+/).filter(Boolean);
+            data.categorias.forEach(c => {
+              const cleanC = c.replace(/\s+/g, '_'); // substituir espaços internos por _
+              if (!existing.includes(cleanC)) existing.push(cleanC);
+            });
+            catInput.value = existing.join(' ');
+          }
+        }
+
+        // Traduções
+        const ptInput = document.getElementById(`${prefix}-pt-input`);
+        const enInput = document.getElementById(`${prefix}-en-input`);
+        const esInput = document.getElementById(`${prefix}-es-input`);
+
+        if (data.traducoes) {
+          if (ptInput && !ptInput.value) {
+            ptInput.value = (data.traducoes.pt && data.traducoes.pt.length > 0)
+              ? data.traducoes.pt.join(', ')
+              : term.toLowerCase();
+          }
+
+          if (enInput && data.traducoes.en && data.traducoes.en.length > 0) {
+            if (!enInput.value) {
+              enInput.value = data.traducoes.en.join(', ');
+            } else if (confirm('Adicionar novas traduções em Inglês às existentes?')) {
+              const existing = enInput.value.split(',').map(t => t.trim()).filter(Boolean);
+              data.traducoes.en.forEach(t => {
+                if (!existing.includes(t)) existing.push(t);
+              });
+              enInput.value = existing.join(', ');
+            }
+          }
+
+          if (esInput && data.traducoes.es && data.traducoes.es.length > 0) {
+            if (!esInput.value) {
+              esInput.value = data.traducoes.es.join(', ');
+            } else if (confirm('Adicionar novas traduções em Espanhol às existentes?')) {
+              const existing = esInput.value.split(',').map(t => t.trim()).filter(Boolean);
+              data.traducoes.es.forEach(t => {
+                if (!existing.includes(t)) existing.push(t);
+              });
+              esInput.value = existing.join(', ');
+            }
+          }
+        }
+
+        statusElement.innerHTML = 'Preenchido com sucesso! <i class="fi fi-rr-sparkles"></i>';
+        statusElement.style.color = '#2e7d32'; // forest green
+        setTimeout(() => { statusElement.style.display = 'none'; }, 5000);
+      })
+      .catch(err => {
+        console.error(err);
+        statusElement.textContent = 'Erro ou termo não encontrado.';
+        statusElement.style.color = 'var(--danger)';
+      });
+  }
+
+  const btnAdd = document.getElementById('btn-autofill');
+  if (btnAdd) {
     btnAdd.addEventListener('click', () => {
-        const term = document.getElementById('add-termo-input').value.trim();
-        if (!term) {
-            alert('Por favor, escreve um termo antes de tentar preencher.');
-            return;
-        }
-        autofillFields('add', term, document.getElementById('autofill-status'));
+      const term = document.getElementById('add-termo-input').value.trim();
+      if (!term) {
+        alert('Por favor, escreve um termo antes de tentar preencher.');
+        return;
+      }
+      autofillFields('add', term, document.getElementById('autofill-status'));
     });
-}
+  }
 
-const btnEdit = document.getElementById('btn-edit-autofill');
-if (btnEdit) {
+  const btnEdit = document.getElementById('btn-edit-autofill');
+  if (btnEdit) {
     btnEdit.addEventListener('click', () => {
-        const term = document.getElementById('edit-termo-input').value.trim();
-        if (!term) {
-            alert('Por favor, escreve um termo antes de tentar preencher.');
-            return;
-        }
-        autofillFields('edit', term, document.getElementById('edit-autofill-status'));
+      const term = document.getElementById('edit-termo-input').value.trim();
+      if (!term) {
+        alert('Por favor, escreve um termo antes de tentar preencher.');
+        return;
+      }
+      autofillFields('edit', term, document.getElementById('edit-autofill-status'));
     });
-}
+  }
 </script>
 {% endblock %}
 {% endblock %}

@@ -10,6 +10,8 @@ import os
 from pathlib import Path
 from utils.enricher import enrich_term_data
 from utils.scraper import scrape_and_save_articles, load_articles
+from utils.train_w2v import train_w2v_model
+from utils.search_engine import search_articles, SBERTSearch
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Configurações e Dados (Antigo data_manager.py)
@@ -449,7 +451,38 @@ def api_enrich():
 def ir_qa():
     articles = load_articles()
     articles_count = len(articles)
-    return render_template("ir_qa.html", active_page="ir_qa", articles_count=articles_count)
+    
+    query = request.args.get("q", "").strip()
+    method = request.args.get("method", "tfidf").strip()
+    
+    results = []
+    if query:
+        results = search_articles(query, method=method, top_n=5)
+        
+    return render_template(
+        "ir_qa.html",
+        active_page="ir_qa",
+        articles_count=articles_count,
+        query=query,
+        method=method,
+        results=results
+    )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# API de Treino Word2Vec
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/api/train_w2v")
+def api_train_w2v():
+    try:
+        success = train_w2v_model()
+        if success:
+            return {"success": True, "message": "Modelo Word2Vec treinado com sucesso!"}
+            
+        return {"success": False, "error": "Erro durante o treino"}, 500
+    except Exception as e:
+        return {"success": False, "error": str(e)}, 500
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -486,4 +519,19 @@ def api_scrape():
 # ══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
+    # 1. Treinar Word2Vec inicial se necessário
+    w2v_path = Path("data/medlex_w2v.model")
+    if not w2v_path.exists():
+        print("Modelo Word2Vec não encontrado. A treinar modelo inicial...")
+        train_w2v_model()
+        
+    # 2. Inicializar cache do SBERT com os artigos existentes
+    try:
+        print("A carregar cache do SBERT...")
+        articles = load_articles()
+        if articles:
+            SBERTSearch(articles).update_cache()
+    except Exception as e:
+        print(f"Erro ao inicializar cache do SBERT: {e}")
+        
     app.run(debug=True, port=5000)

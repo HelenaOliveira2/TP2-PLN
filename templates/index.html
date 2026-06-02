@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block head %}<title>Início — MedLex Explorer</title>{% endblock %}
+{% block head %}Início — MedLex Explorer{% endblock %}
 
 {% block body %}
 
@@ -43,33 +43,29 @@
 <div class="section-lbl">Módulos disponíveis</div>
 
 <div class="module-grid">
-  <a href="{{ url_for('dashboard') }}" class="module-card"
-     style="border-top:3px solid #2e6b4455;">
-    <div class="module-icon-box" style="background:#eaf4ec;">📊</div>
+  <a href="{{ url_for('dashboard') }}" class="module-card" style="border-top:3px solid #2e6b4455;">
+    <div class="module-icon-box" style="background:#eaf4ec;"><i class="fi fi-rr-stats"></i></div>
     <h3>Dashboard</h3>
     <p>Estatísticas e visão geral do dataset</p>
     <div class="module-tag" style="color:#2e6b44;">Gráficos interativos</div>
   </a>
 
-  <a href="{{ url_for('pesquisa') }}" class="module-card"
-     style="border-top:3px solid #3b599855;">
-    <div class="module-icon-box" style="background:#e8f0fe;">🔍</div>
+  <a href="{{ url_for('pesquisa') }}" class="module-card" style="border-top:3px solid #3b599855;">
+    <div class="module-icon-box" style="background:#e8f0fe;"><i class="fi fi-rr-search"></i></div>
     <h3>Pesquisa</h3>
     <p>Filtra e explora termos por idioma ou texto livre</p>
     <div class="module-tag" style="color:#3b5998;">Busca + filtros</div>
   </a>
 
-  <a href="{{ url_for('gestao') }}" class="module-card"
-     style="border-top:3px solid #8a5e0055;">
-    <div class="module-icon-box" style="background:#fff3e0;">✏️</div>
+  <a href="{{ url_for('gestao') }}" class="module-card" style="border-top:3px solid #8a5e0055;">
+    <div class="module-icon-box" style="background:#fff3e0;"><i class="fi fi-rr-pencil"></i></div>
     <h3>Gestão</h3>
     <p>Adiciona, edita e remove termos do dicionário</p>
     <div class="module-tag" style="color:#8a5e00;">CRUD completo</div>
   </a>
 
-  <a href="{{ url_for('ir_qa') }}" class="module-card"
-     style="border-top:3px solid #8b1a3555;">
-    <div class="module-icon-box" style="background:#fce4ec;">🤖</div>
+  <a href="{{ url_for('ir_qa') }}" class="module-card" style="border-top:3px solid #8b1a3555;">
+    <div class="module-icon-box" style="background:#fce4ec;"><i class="fi fi-rr-user-robot"></i></div>
     <h3>IR + QA</h3>
     <p>Pesquisa de artigos e perguntas à IA</p>
     <div class="module-tag" style="color:#8b1a35;">LLM-powered</div>

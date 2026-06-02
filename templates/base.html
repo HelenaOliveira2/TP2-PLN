@@ -1,20 +1,23 @@
 <!DOCTYPE html>
 <html lang="pt">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="MedLex Explorer — Plataforma de exploração do dicionário médico multilingue">
   <title>{% block head %}MedLex Explorer{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://cdn.jsdelivr.net/npm/@flaticon/flaticon-uicons@3.3.1/css/all/all.min.css" rel="stylesheet">
   {% block styles %}{% endblock %}
 </head>
+
 <body>
 
   <!-- ── Topbar ─────────────────────────────────────────────────────── -->
   <header class="topbar">
     <div class="topbar-inner">
       <a href="{{ url_for('index') }}" class="topbar-logo">
-        <div class="topbar-logo-icon">🩺</div>
+        <div class="topbar-logo-icon"><i class="fi fi-rr-stethoscope"></i></div>
         <div>
           <div class="topbar-logo-name">MedLex</div>
           <div class="topbar-logo-sub">Explorer</div>
@@ -22,19 +25,18 @@
       </a>
 
       <nav class="topbar-nav">
-        <a href="{{ url_for('index') }}"
-           class="topbar-link {{ 'active' if active_page == 'home' else '' }}">Início</a>
+        <a href="{{ url_for('index') }}" class="topbar-link {{ 'active' if active_page == 'home' else '' }}">Início</a>
         <a href="{{ url_for('dashboard') }}"
-           class="topbar-link {{ 'active' if active_page == 'dashboard' else '' }}">Dashboard</a>
+          class="topbar-link {{ 'active' if active_page == 'dashboard' else '' }}">Dashboard</a>
         <a href="{{ url_for('pesquisa') }}"
-           class="topbar-link {{ 'active' if active_page == 'pesquisa' else '' }}">Pesquisa</a>
+          class="topbar-link {{ 'active' if active_page == 'pesquisa' else '' }}">Pesquisa</a>
         <a href="{{ url_for('gestao') }}"
-           class="topbar-link {{ 'active' if active_page == 'gestao' else '' }}">Gestão</a>
-        <a href="{{ url_for('ir_qa') }}"
-           class="topbar-link {{ 'active' if active_page == 'ir_qa' else '' }}">IR + QA</a>
+          class="topbar-link {{ 'active' if active_page == 'gestao' else '' }}">Gestão</a>
+        <a href="{{ url_for('ir_qa') }}" class="topbar-link {{ 'active' if active_page == 'ir_qa' else '' }}">IR +
+          QA</a>
       </nav>
 
-      <div class="topbar-badge">PLN 2024/25</div>
+      <div class="topbar-badge">PLN 2025/26</div>
     </div>
   </header>
 
@@ -43,14 +45,15 @@
     <div class="page-content">
 
       {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          {% for category, message in messages %}
-            <div class="alert alert-{{ category }}" style="margin-bottom:16px;">
-              {% if category == 'success' %}✅{% elif category == 'warning' %}⚠️{% else %}❌{% endif %}
-              {{ message }}
-            </div>
-          {% endfor %}
-        {% endif %}
+      {% if messages %}
+      {% for category, message in messages %}
+      <div class="alert alert-{{ category }}" style="margin-bottom:16px;">
+        {% if category == 'success' %}<i class="fi fi-rr-check"></i>{% elif category == 'warning' %}<i
+          class="fi fi-rs-triangle-warning"></i>{% else %}<i class="fi fi-rr-cross"></i>{% endif %}
+        {{ message }}
+      </div>
+      {% endfor %}
+      {% endif %}
       {% endwith %}
 
       {% block body %}{% endblock %}
@@ -59,27 +62,28 @@
 
   {% block scripts %}
   <script>
-  document.querySelectorAll('.entry-header').forEach(header => {
-    header.addEventListener('click', () => {
-      const body = header.nextElementSibling;
-      if (body && body.classList.contains('entry-body'))
-        body.classList.toggle('open');
+    document.querySelectorAll('.entry-header').forEach(header => {
+      header.addEventListener('click', () => {
+        const body = header.nextElementSibling;
+        if (body && body.classList.contains('entry-body'))
+          body.classList.toggle('open');
+      });
     });
-  });
 
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const target = btn.dataset.tab;
-      const container = btn.closest('.tab-container');
-      container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      container.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      const pane = container.querySelector('#' + target);
-      if (pane) pane.classList.add('active');
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.tab;
+        const container = btn.closest('.tab-container');
+        container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        container.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const pane = container.querySelector('#' + target);
+        if (pane) pane.classList.add('active');
+      });
     });
-  });
   </script>
   {% endblock %}
 
 </body>
+
 </html>
