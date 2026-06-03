@@ -10,7 +10,6 @@ import os
 from pathlib import Path
 from utils.enricher import enrich_term_data
 from utils.scraper import scrape_and_save_articles, load_articles
-from utils.train_w2v import train_w2v_model
 from utils.search_engine import search_articles, SBERTSearch
 from utils.qa_engine import answer_question
 
@@ -20,6 +19,19 @@ from utils.qa_engine import answer_question
 
 app = Flask(__name__)
 app.secret_key = "medlex-secret-2025"   # necessário para flash messages
+
+@app.template_filter('highlight')
+def highlight_filter(text, query):
+    if not query or not text:
+        return text
+    import re
+    from markupsafe import Markup
+    text_str = str(text)
+    pattern = re.compile(rf"({re.escape(query)})", re.IGNORECASE)
+    highlighted = pattern.sub(r"<u>\1</u>", text_str)
+    return Markup(highlighted)
+
+app.jinja_env.filters['highlight'] = highlight_filter
 
 _PROJECT_ROOT = Path(__file__).resolve().parent
 DATA_PATH = _PROJECT_ROOT / "DICIONARIO_GIGANTE_FINAL.json"
@@ -217,6 +229,7 @@ PAGE_SIZE = 20
 
 @app.get("/pesquisa")
 def pesquisa():
+    import string
     data        = get_data()
     all_cats    = get_all_categories()
     all_srcs    = get_all_sources()
@@ -228,8 +241,8 @@ def pesquisa():
     sort        = request.args.get("sort", "rel")
     has_def     = bool(request.args.get("has_def"))
     has_syn     = bool(request.args.get("has_syn"))
-    page        = max(1, int(request.args.get("p", 1)))
 
+    alphabet    = list(string.ascii_uppercase)
     results = []
     for key, entry in data.items():
         # Pontuação de relevância
@@ -262,25 +275,12 @@ def pesquisa():
     # Ordenação
     if sort == "rel" and query:
         results.sort(key=lambda x: x[2], reverse=True)
-    elif sort == "az":
+    elif sort == "az" or (sort == "rel" and not query):
         results.sort(key=lambda x: x[0])
     elif sort == "za":
         results.sort(key=lambda x: x[0], reverse=True)
 
-    total       = len(results)
-    total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
-    page        = min(page, total_pages)
-    page_results = [(k, e) for k, e, _ in results[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]]
-
-    # Query string para paginação (sem o 'p')
-    qs_parts = []
-    for k, v in [("q", query), ("cat", cat_filter), ("src", src_filter),
-                  ("lang", lang_filter), ("sort", sort)]:
-        if v:
-            qs_parts.append(f"{k}={v}")
-    if has_def: qs_parts.append("has_def=1")
-    if has_syn: qs_parts.append("has_syn=1")
-    pagination_qs = "&".join(qs_parts)
+    page_results = [(k, e) for k, e, _ in results]
 
     return render_template(
         "pesquisa.html",
@@ -289,10 +289,10 @@ def pesquisa():
         cat_filter=cat_filter, src_filter=src_filter,
         lang_filter=lang_filter, sort=sort,
         has_def=has_def, has_syn=has_syn,
+        alphabet=alphabet,
         all_cats=all_cats, all_srcs=all_srcs,
         results=page_results,
-        total=total, page=page, total_pages=total_pages,
-        pagination_qs=pagination_qs,
+        total=len(results),
     )
 
 
@@ -410,11 +410,14 @@ def gestao_update():
 
 @app.post("/gestao/delete")
 def gestao_delete():
-    key     = request.form.get("key", "")
-    confirm = request.form.get("confirm")
+    key      = request.form.get("key", "")
+    confirm  = request.form.get("confirm")
+    next_url = request.form.get("next_url")
 
     if not confirm:
         flash("Tens de confirmar antes de apagar.", "warning")
+        if next_url:
+            return redirect(next_url)
         return redirect(url_for("gestao", tab="delete"))
 
     data = get_data()
@@ -425,6 +428,8 @@ def gestao_delete():
     else:
         flash("Erro ao apagar o termo.", "danger")
 
+    if next_url:
+        return redirect(next_url)
     return redirect(url_for("gestao", tab="delete"))
 
 
@@ -468,22 +473,6 @@ def ir_qa():
         method=method,
         results=results
     )
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# API de Treino Word2Vec
-# ══════════════════════════════════════════════════════════════════════════════
-
-@app.post("/api/train_w2v")
-def api_train_w2v():
-    try:
-        success = train_w2v_model()
-        if success:
-            return {"success": True, "message": "Modelo Word2Vec treinado com sucesso!"}
-            
-        return {"success": False, "error": "Erro durante o treino"}, 500
-    except Exception as e:
-        return {"success": False, "error": str(e)}, 500
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -539,13 +528,7 @@ def api_qa():
 # ══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    # 1. Treinar Word2Vec inicial se necessário
-    w2v_path = Path("data/medlex_w2v.model")
-    if not w2v_path.exists():
-        print("Modelo Word2Vec não encontrado. A treinar modelo inicial...")
-        train_w2v_model()
-        
-    # 2. Inicializar cache do SBERT com os artigos existentes
+    # 1. Inicializar cache do SBERT com os artigos existentes
     try:
         print("A carregar cache do SBERT...")
         articles = load_articles()

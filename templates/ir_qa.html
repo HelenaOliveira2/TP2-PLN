@@ -20,23 +20,18 @@
         style="font-size:0.85rem;color:var(--text-muted);margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <span>Atualmente tens <strong id="articles-count-badge" style="color:var(--forest);font-size:1rem;">{{
             articles_count }}</strong> artigos científicos locais </span>
-
-        <button type="button" class="btn btn-ghost btn-sm" id="btn-retrain-w2v"
-          style="font-size:0.75rem;padding:3px 10px;display:inline-flex;align-items:center;gap:4px;">
-          <i class="fi fi-rr-rotate-right"></i> Re-treinar Word2Vec
-        </button>
-        <span id="train-status" style="font-size:0.75rem;color:var(--forest);font-weight:600;display:none;"></span>
       </p>
     </div>
 
     <!-- Painel de Scraping -->
+    <!-- Painel de Scraping -->
     <div
       style="background:var(--cream);border:1px solid var(--cream-border);border-radius:var(--radius-md);padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <div style="font-size:0.8rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:4px;">
-        Importar do PubMed:
+        Importar do Dataset:
       </div>
       <form id="pubmed-scrape-form" style="display:flex;align-items:center;gap:8px;margin:0;">
-        <input type="text" name="query" id="scrape-query" required placeholder="ex: diabetes, cancer"
+        <input type="text" name="query" id="scrape-query" required placeholder="ex: diabetes, vasculite"
           style="padding:6px 12px;border:1px solid var(--cream-border);border-radius:var(--radius-sm);font-size:0.8rem;width:150px;outline:none;">
         <select name="limit" id="scrape-limit"
           style="padding:6px 12px;border:1px solid var(--cream-border);border-radius:var(--radius-sm);font-size:0.8rem;outline:none;background:#fff;cursor:pointer;">
@@ -45,7 +40,7 @@
           <option value="10">10 artigos</option>
         </select>
         <button type="submit" class="btn btn-primary btn-sm" id="btn-scrape">
-          Descarregar
+          Importar
         </button>
       </form>
     </div>
@@ -56,7 +51,7 @@
     style="margin-top:14px;font-size:0.82rem;display:none;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius-sm);">
     <span class="spinner"
       style="display:inline-block;width:14px;height:14px;border:2px solid var(--text-faint);border-top-color:var(--forest);border-radius:50%;animation:spin 1s linear infinite;"></span>
-    <span id="scrape-status-text">A descarregar artigos do PubMed...</span>
+    <span id="scrape-status-text">A pesquisar e importar casos clínicos do dataset SPMI...</span>
   </div>
 </div>
 
@@ -74,7 +69,6 @@
     <select name="method" class="filter-select"
       style="width:100%;height:100%;padding:10px 14px;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);">
       <option value="tfidf" {{ 'selected' if method=='tfidf' }}>TF-IDF (Frequência - Raiz)</option>
-      <option value="w2v" {{ 'selected' if method=='w2v' }}>Word2Vec (Treino local - Semântico)</option>
       <option value="sbert" {{ 'selected' if method=='sbert' }}>SBERT (Multilingue - Profundo)</option>
     </select>
 
@@ -91,7 +85,7 @@
   <span>
     Encontrados <strong class="results-count">{{ results | length }}</strong> artigos mais relevantes usando
     <span style="font-weight:600;color:var(--text-dark);">
-      {% if method == 'tfidf' %}TF-IDF{% elif method == 'w2v' %}Word2Vec médio{% else %}SBERT{% endif %}
+      {% if method == 'tfidf' %}TF-IDF{% else %}SBERT{% endif %}
     </span>
     para <em style="color:var(--text-mid);">"{{ query }}"</em>
   </span>
@@ -113,14 +107,15 @@
       <div>
         <div class="entry-title"
           style="font-family:var(--font-serif);font-size:1.05rem;line-height:1.4;margin-bottom:4px;">
-          {{ art.titulo }}
+          {{ art.titulo | highlight(query) }}
         </div>
         <div class="entry-meta" style="font-size:0.75rem;color:var(--text-muted);">
-          <strong style="color:var(--text-mid);">{{ art.autores }}</strong> · <em>{{ art.revista }}</em> ({{ art.data
+          <strong style="color:var(--text-mid);">{{ art.autores | highlight(query) }}</strong> · <em>{{ art.revista |
+            highlight(query) }}</em> ({{ art.data
           }})
           {% if art.termo_pesquisa %}
           <span class="badge badge-gray" style="font-size:0.6rem;padding:1px 6px;margin-left:8px;">tópico: {{
-            art.termo_pesquisa }}</span>
+            art.termo_pesquisa | highlight(query) }}</span>
           {% endif %}
         </div>
       </div>
@@ -144,11 +139,13 @@
       <div class="sub-label" style="margin-top:0;">Resumo / Abstract</div>
       <div class="entry-def"
         style="margin-top:4px;white-space:pre-line;line-height:1.7;background:#faf9f6;font-size:0.88rem;">
-        {{ art.resumo }}
+        {{ art.resumo | highlight(query) }}
       </div>
 
       <div style="font-size:0.7rem;color:var(--text-faint);margin-bottom:12px;">
-        PMID: {{ art.pmid }} · Artigo científico obtido do PubMed via Web Scraping.
+        ID: {{ art.pmid }} {% if art.link %}· <a href="{{ art.link }}" target="_blank"
+          style="color:var(--forest);text-decoration:underline;">Ver Caso Clínico Original (SPMI)</a>{% endif %} · Caso
+        clínico obtido do dataset SPMI.
       </div>
 
       <!-- Acções (Fase 4 - Question Answering) -->
@@ -266,43 +263,6 @@
     });
   });
 
-  // 3. Lógica do botão de re-treino do Word2Vec
-  const btnRetrain = document.getElementById('btn-retrain-w2v');
-  const trainStatus = document.getElementById('train-status');
-  if (btnRetrain) {
-    btnRetrain.addEventListener('click', () => {
-      btnRetrain.disabled = true;
-      btnRetrain.style.opacity = 0.5;
-      trainStatus.textContent = "A re-treinar modelo semântico local...";
-      trainStatus.style.display = "inline";
-      trainStatus.style.color = "var(--text-muted)";
-
-      fetch('/api/train_w2v', { method: 'POST' })
-        .then(response => {
-          if (!response.ok) throw new Error("Erro no treino");
-          return response.json();
-        })
-        .then(data => {
-          btnRetrain.disabled = false;
-          btnRetrain.style.opacity = 1;
-          if (data.success) {
-            trainStatus.textContent = "Word2Vec re-treinado e indexado!";
-            trainStatus.style.color = "var(--forest)";
-          } else {
-            trainStatus.textContent = "Erro no treino do Word2Vec.";
-            trainStatus.style.color = "var(--danger)";
-          }
-          setTimeout(() => { trainStatus.style.display = "none"; }, 5000);
-        })
-        .catch(err => {
-          console.error(err);
-          btnRetrain.disabled = false;
-          btnRetrain.style.opacity = 1;
-          trainStatus.textContent = "Erro ao contactar servidor.";
-          trainStatus.style.color = "var(--danger)";
-        });
-    });
-  }
 
   // 4. Lógica do Scraper do PubMed (existente)
   const form = document.getElementById('pubmed-scrape-form');
@@ -326,7 +286,7 @@
       statusDiv.style.background = 'var(--forest-pale)';
       statusDiv.style.border = '1px solid var(--forest-mid)';
       statusDiv.style.color = 'var(--forest)';
-      statusText.textContent = `A contactar o PubMed do NCBI e descarregar artigos sobre "${query}"... `;
+      statusText.textContent = `A pesquisar no dataset de casos clínicos SPMI por "${query}"... `;
       const spinner = statusDiv.querySelector('.spinner');
       if (spinner) spinner.style.display = 'inline-block';
 
@@ -348,13 +308,13 @@
 
           if (data.success) {
             countBadge.textContent = data.total_articles;
-            statusText.innerHTML = `Sucesso! Foram adicionados ${data.new_added} novos artigos à coleção (Total: ${data.total_articles}). <i class="fi fi-rr-sparkles"></i>`;
+            statusText.innerHTML = `Sucesso! Foram importados ${data.new_added} novos casos à coleção (Total: ${data.total_articles}). <i class="fi fi-rr-sparkles"></i>`;
             statusDiv.style.background = 'var(--forest-pale)';
             statusDiv.style.border = '1px solid var(--forest-mid)';
             statusDiv.style.color = 'var(--forest)';
             document.getElementById('scrape-query').value = '';
           } else {
-            statusText.textContent = 'Erro ao processar artigos.';
+            statusText.textContent = 'Erro ao processar o dataset SPMI.';
             statusDiv.style.color = 'var(--danger)';
           }
           const spinner = statusDiv.querySelector('.spinner');
@@ -368,7 +328,7 @@
           console.error(err);
           btnScrape.disabled = false;
           btnScrape.style.opacity = 1;
-          statusText.textContent = 'Erro ao contactar a API do PubMed ou processar XML.';
+          statusText.textContent = 'Erro ao pesquisar ou processar o dataset SPMI.';
           statusDiv.style.background = 'var(--danger-pale)';
           statusDiv.style.border = '1px solid #fca5a5';
           statusDiv.style.color = 'var(--danger)';

@@ -885,3 +885,16 @@ body {
   .module-grid { grid-template-columns: 1fr; }
   .page-content { padding: 24px 16px 40px; }
 }
+
+/* ── Realce de Termos Pesquisados (Highlight) ───────────────────────────── */
+u {
+  text-decoration: underline;
+  text-decoration-color: var(--forest);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  background-color: rgba(46, 107, 68, 0.08);
+  padding: 0 2px;
+  border-radius: 3px;
+  font-weight: 600;
+  color: var(--text-dark);
+}

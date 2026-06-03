@@ -58,24 +58,28 @@
   </div>
 </form>
 
-<!-- ── Estado vazio (sem pesquisa) ───────────────────────────────────────── -->
-{% if not query and not cat_filter and not src_filter and not lang_filter and not has_def and not has_syn %}
-<div class="empty-state">
-  <div class="empty-state-icon"><i class="fi fi-rr-search"></i></div>
-  <h3>Começa por escrever um termo</h3>
-  <p>Pesquisa por nome, sinónimo, definição ou tradução</p>
+<!-- ── Filtro por Letra Inicial (Alfabeto) ────────────────────────────────── -->
+<div class="alphabet-container"
+  style="background:var(--white); border:1px solid var(--cream-border); border-radius:var(--radius-lg); padding:16px 20px; margin-bottom:24px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; gap:10px; position: sticky; top: 64px; z-index: 90;">
+  <div
+    style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-faint); margin-bottom:2px;">
+    Navegação Rápida (Saltar para a Letra)
+  </div>
+  <div style="display:flex; flex-wrap:wrap; gap:6px;">
+    {% for l in alphabet %}
+    <a href="#letter-{{ l }}" class="btn btn-ghost btn-sm"
+      style="padding:5px 0; min-width:32px; text-align:center; font-weight:600; font-size:0.8rem; margin:0; display:inline-flex; align-items:center; justify-content:center;">
+      {{ l }}
+    </a>
+    {% endfor %}
+  </div>
 </div>
 
-<!-- ── Resultados ────────────────────────────────────────────────────────── -->
-{% else %}
 <div class="results-bar">
   <span>
     <span class="results-count">{{ "{:,}".format(total) }}</span>
     resultado{{ 's' if total != 1 else '' }} encontrado{{ 's' if total != 1 else '' }}
     {% if query %} para <em style="color:var(--text-mid);">"{{ query }}"</em>{% endif %}
-  </span>
-  <span style="color:var(--text-faint);font-size:0.78rem;">
-    Página {{ page }} de {{ total_pages }}
   </span>
 </div>
 
@@ -88,8 +92,19 @@
 
 {% else %}
 <div class="entry-list">
+  {% set ns = namespace(current_letter='') %}
   {% for key, entry in results %}
   {% set term = entry.get('termo_principal', key) %}
+  {% set first_char = term[0]|upper %}
+
+  {% if first_char in alphabet and first_char != ns.current_letter %}
+  {% set ns.current_letter = first_char %}
+  <div id="letter-{{ first_char }}" style="scroll-margin-top: 140px;"></div>
+  <div class="letter-separator"
+    style="font-family:var(--font-serif); font-size:1.8rem; font-weight:700; color:var(--forest); margin: 32px 0 16px; border-bottom: 2px solid var(--forest-mid); padding-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+    <span>Letra {{ first_char }}</span>
+  </div>
+  {% endif %}
   {% set cats = entry.get('categorias', []) %}
   {% set defs = entry.get('definicoes', []) %}
   {% set syns = entry.get('sinonimos', []) %}
@@ -101,14 +116,14 @@
     <!-- Cabeçalho clicável -->
     <div class="entry-header">
       <div>
-        <div class="entry-title">{{ term }}</div>
+        <div class="entry-title">{{ term | highlight(query) }}</div>
         <div class="entry-meta">
           {% for c in cats[:3] %}
           <span class="badge" style="font-size:0.65rem;">{{ c }}</span>
           {% endfor %}
           {% if defs %}
           <span style="color:var(--text-faint);font-size:0.72rem;margin-left:4px;">
-            {{ defs[0][:80] }}{{ '…' if defs[0]|length > 80 else '' }}
+            {{ defs[0][:80] | highlight(query) }}{{ '…' if defs[0]|length > 80 else '' }}
           </span>
           {% endif %}
         </div>
@@ -131,7 +146,7 @@
           {% if defs %}
           <div class="sub-label">Definição</div>
           {% for d in defs[:2] %}
-          <div class="entry-def">{{ d }}</div>
+          <div class="entry-def">{{ d | highlight(query) }}</div>
           {% endfor %}
           {% endif %}
 
@@ -139,7 +154,7 @@
           <div class="sub-label">Sinónimos</div>
           <div style="line-height:2.2;">
             {% for s in syns %}
-            <span class="badge badge-gray">{{ s }}</span>
+            <span class="badge badge-gray">{{ s | highlight(query) }}</span>
             {% endfor %}
           </div>
           {% endif %}
@@ -164,7 +179,8 @@
           <div
             style="padding:7px 0;border-bottom:1px solid var(--cream-border);display:flex;gap:8px;align-items:flex-start;">
             <span class="badge badge-gray" style="font-size:0.62rem;flex-shrink:0;">{{ lang.upper() }}</span>
-            <span style="font-size:0.82rem;color:var(--text-mid);font-style:italic;">{{ vals[0] }}</span>
+            <span style="font-size:0.82rem;color:var(--text-mid);font-style:italic;">{{ vals[0] | highlight(query)
+              }}</span>
           </div>
           {% endif %}
           {% endfor %}
@@ -182,35 +198,29 @@
       </div>
 
       <!-- Ações -->
-      <div style="display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--cream-border);">
-        <a class="btn btn-ghost btn-sm" href="{{ url_for('gestao') }}?edit={{ key }}">Editar</a>
-        <a class="btn btn-ghost btn-sm" href="{{ url_for('ir_qa') }}?q={{ term | urlencode }}">Ver artigos</a>
+      <div style="display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--cream-border);align-items:center;">
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('gestao') }}?tab=edit&edit={{ key }}&edit_key={{ key }}">
+          <i class="fi fi-rr-edit" style="margin-right:4px;"></i>Editar
+        </a>
+        <form method="POST" action="{{ url_for('gestao_delete') }}" style="display:inline;margin:0;" onsubmit="return confirm('Tem a certeza que deseja apagar o termo &quot;{{ term }}&quot; permanentemente?');">
+          <input type="hidden" name="key" value="{{ key }}">
+          <input type="hidden" name="confirm" value="1">
+          <input type="hidden" name="next_url" value="{{ request.full_path }}">
+          <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:rgba(239,68,68,0.2);display:inline-flex;align-items:center;gap:4px;">
+            <i class="fi fi-rr-trash"></i>Apagar
+          </button>
+        </form>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('ir_qa') }}?q={{ term | urlencode }}" style="margin-left:auto;">
+          <i class="fi fi-rr-document-signed" style="margin-right:4px;"></i>Ver artigos
+        </a>
       </div>
     </div>
   </div>
   {% endfor %}
 </div>
 
-<!-- ── Paginação ──────────────────────────────────────────────────────────── -->
-{% if total_pages > 1 %}
-<div class="pagination">
-  {% if page > 1 %}
-  <a class="page-link" href="?{{ pagination_qs }}&p={{ page - 1 }}">‹ Anterior</a>
-  {% endif %}
 
-  {% for pg in range([1, page-2]|max, [total_pages+1, page+3]|min) %}
-  <a class="page-link {{ 'current' if pg == page else '' }}" href="?{{ pagination_qs }}&p={{ pg }}">{{ pg }}</a>
-  {% endfor %}
 
-  {% if page < total_pages %} <a class="page-link" href="?{{ pagination_qs }}&p={{ page + 1 }}">Próxima ›</a>
-    {% endif %}
-</div>
-<div style="text-align:center;margin-top:10px;font-size:0.75rem;color:var(--text-faint);">
-  {{ "{:,}".format(total) }} resultados · página {{ page }} de {{ total_pages }}
-</div>
-{% endif %}
-
-{% endif %}
 {% endif %}
 
 {% endblock %}

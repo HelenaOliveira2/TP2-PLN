@@ -24,7 +24,7 @@ _sbert_model = None
 def get_sbert_model():
     global _sbert_model
     if _sbert_model is None:
-        print("A carregar modelo SBERT (SentenceTransformer)...")
+        print("A carregar modelo SBERT (SentenceTransformer - MedLink Bi-Encoder)...")
         from sentence_transformers import SentenceTransformer
         # Modelo leve multilingue (cerca de 420MB)
         _sbert_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
@@ -336,9 +336,6 @@ def search_articles(query: str, method: str = "tfidf", top_n: int = 5) -> List[D
     
     if method == "tfidf":
         searcher = TFIDFSearch(articles)
-        raw_results = searcher.search(query, top_n)
-    elif method == "w2v":
-        searcher = Word2VecSearch(articles)
         raw_results = searcher.search(query, top_n)
     elif method == "sbert":
         searcher = SBERTSearch(articles)
