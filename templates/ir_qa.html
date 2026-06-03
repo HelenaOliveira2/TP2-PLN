@@ -105,16 +105,23 @@
     <div class="entry-header">
       <div>
         <div class="entry-title"
-          style="font-family:var(--font-serif);font-size:1.05rem;line-height:1.4;margin-bottom:4px;">
+          style="font-family:var(--font-serif);font-size:1.2rem;line-height:1.4;margin-bottom:8px;font-weight:600;color:var(--text-dark);">
           {{ art.titulo | highlight(query) }}
         </div>
-        <div class="entry-meta" style="font-size:0.75rem;color:var(--text-muted);">
-          <strong style="color:var(--text-mid);">{{ art.autores | highlight(query) }}</strong> · <em>{{ art.revista |
-            highlight(query) }}</em> ({{ art.data
-          }})
+        <div class="entry-meta" style="color:var(--text-muted);display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:0.92rem;line-height:1.5;color:var(--text-dark);">
+            <strong style="color:var(--text-mid);">Autor(es):</strong> {{ art.autores | highlight(query) }}
+          </div>
+          <div style="font-size:0.86rem;display:flex;gap:16px;flex-wrap:wrap;color:var(--text-mid);">
+            <span><strong style="color:var(--text-mid);">Revista:</strong> <em>{{ art.revista | highlight(query) }}</em></span>
+            <span><strong style="color:var(--text-mid);">Data:</strong> {{ art.data }}</span>
+          </div>
           {% if art.termo_pesquisa %}
-          <span class="badge badge-gray" style="font-size:0.6rem;padding:1px 6px;margin-left:8px;">tópico: {{
-            art.termo_pesquisa | highlight(query) }}</span>
+          <div style="margin-top:4px;">
+            <span class="badge badge-gray" style="font-size:0.78rem;padding:4px 10px;border-radius:4px;">
+              <strong>Tópicos:</strong> {{ art.termo_pesquisa | highlight(query) }}
+            </span>
+          </div>
           {% endif %}
         </div>
       </div>
@@ -166,7 +173,7 @@
 
         <form class="qa-form" data-pmid="{{ art.pmid }}" style="display:flex;gap:8px;margin-bottom:0;">
           <!-- O contexto oculto -->
-          <input type="hidden" name="context" value="{{ art.resumo }}">
+          <input type="hidden" name="context" value="Título: {{ art.titulo }}&#10;Autores: {{ art.autores }}&#10;Revista: {{ art.revista }}&#10;Data de Publicação: {{ art.data }}&#10;Palavras-chave: {{ art.termo_pesquisa }}&#10;&#10;Resumo:&#10;{{ art.resumo }}">
           <input type="text" name="question" required
             placeholder="Escreve a tua pergunta em Português sobre este artigo..."
             class="search-input qa-question-input"

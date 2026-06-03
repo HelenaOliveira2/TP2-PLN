@@ -132,7 +132,7 @@
         {% if trad.get('en') %}<span class="badge badge-gray">EN</span>{% endif %}
         {% if trad.get('es') %}<span class="badge badge-gray">ES</span>{% endif %}
         {% if trad.get('fr') %}<span class="badge badge-gray">FR</span>{% endif %}
-        {% if trad.get('la') %}<span class="badge badge-amber">LA</span>{% endif %}
+        {% if trad.get('la') %}<span class="badge badge-gray">LA</span>{% endif %}
         <span style="color:var(--text-faint);font-size:1.1rem;">›</span>
       </div>
     </div>
@@ -154,7 +154,7 @@
           <div class="sub-label">Sinónimos</div>
           <div style="line-height:2.2;">
             {% for s in syns %}
-            <span class="badge badge-gray">{{ s | highlight(query) }}</span>
+            <a href="{{ url_for('pesquisa') }}?q={{ s | urlencode }}" class="badge badge-gray" style="text-decoration: none;">{{ s | highlight(query) }}</a>
             {% endfor %}
           </div>
           {% endif %}
