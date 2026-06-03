@@ -1,10 +1,6 @@
 {% extends "base.html" %}
 
-{% block head %}
-Dashboard — MedLex Explorer
-<!-- Plotly CDN para gráficos -->
-<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-{% endblock %}
+{% block head %}Dashboard — MedLex Explorer{% endblock %}
 
 {% block body %}
 
@@ -74,6 +70,8 @@ Dashboard — MedLex Explorer
 
 {% block scripts %}
 {{ super() }}
+<!-- Plotly CDN para gráficos -->
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <script>
   /* Dados vindos do Flask (usamos JSON.parse para o VSCode não dar erro) */
   const catLabels = JSON.parse('{{ cat_labels | tojson | safe }}');

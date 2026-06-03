@@ -554,4 +554,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Erro ao inicializar cache do SBERT: {e}")
         
-    app.run(debug=True, port=5000)
+    app.run(debug=True, use_reloader=False, port=5000)
