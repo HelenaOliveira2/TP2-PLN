@@ -252,7 +252,7 @@
       {% endif %}
     </div>
 
-    <form method="POST" action="{{ url_for('gestao_delete') }}">
+    <form method="POST" action="{{ url_for('gestao_delete') }}" onsubmit="return confirm('Tem a certeza absoluta que deseja apagar este termo permanentemente?');">
       <input type="hidden" name="key" value="{{ del_key }}">
       <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;
                       color:var(--text-mid);margin-bottom:16px;cursor:pointer;">

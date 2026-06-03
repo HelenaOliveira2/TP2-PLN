@@ -59,8 +59,11 @@ squad = squad.train_test_split(test_size=0.5)
 
 # 2. CARREGAR TOKENIZADOR
 from transformers import AutoTokenizer
-# No tutorial usam distilbert, nós usamos o nosso
-tokenizer = AutoTokenizer.from_pretrained("deepset/xlm-roberta-base-squad2")
+# 2. DEFINIR O MODELO E TOKENIZER
+# O modelo LIAAD estava corrompido no HuggingFace, voltamos ao original!
+model_name = "pierreguillou/bert-base-cased-squad-v1.1-portuguese"
+
+tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
 
 
 # 3. FUNÇÃO DE PRÉ-PROCESSAMENTO (Exatamente igual ao tutorial)
@@ -127,14 +130,14 @@ data_collator = DefaultDataCollator()
 
 # 6. MODELO E ARGUMENTOS DE TREINO (Exatamente como no tutorial)
 from transformers import AutoModelForQuestionAnswering, TrainingArguments, Trainer
-model = AutoModelForQuestionAnswering.from_pretrained("deepset/xlm-roberta-base-squad2")
+model = AutoModelForQuestionAnswering.from_pretrained(model_name)
 
 training_args = TrainingArguments(
     output_dir="my_awesome_qa_model",
-    evaluation_strategy="epoch",
+    eval_strategy="epoch",  # corrigido para a versão mais recente do transformers
     learning_rate=2e-5,
-    per_device_train_batch_size=16,
-    per_device_eval_batch_size=16,
+    per_device_train_batch_size=2,
+    per_device_eval_batch_size=2,
     num_train_epochs=3,
     weight_decay=0.01,
     push_to_hub=False, # Não queremos publicar no site da HuggingFace
@@ -147,7 +150,7 @@ trainer = Trainer(
     args=training_args,
     train_dataset=tokenized_squad["train"],
     eval_dataset=tokenized_squad["test"],
-    tokenizer=tokenizer,
+    #tokenizer=tokenizer,
     data_collator=data_collator,
 )
 
@@ -155,5 +158,11 @@ trainer = Trainer(
 # 8. TREINAR!
 if __name__ == "__main__":
     print("A iniciar o treino exatamente como no tutorial do HuggingFace...")
-    # trainer.train()
-    print("Para correr o treino a sério, descomenta a linha 'trainer.train()'.")
+    trainer.train()
+    print("Treino concluído com sucesso!")
+    
+    import os
+    save_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "my_awesome_qa_model"))
+    trainer.save_model(save_path)
+    tokenizer.save_pretrained(save_path)
+    print(f"O teu modelo personalizado foi guardado na pasta '{save_path}'!")

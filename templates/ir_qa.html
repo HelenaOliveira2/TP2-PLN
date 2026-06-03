@@ -24,14 +24,13 @@
     </div>
 
     <!-- Painel de Scraping -->
-    <!-- Painel de Scraping -->
     <div
       style="background:var(--cream);border:1px solid var(--cream-border);border-radius:var(--radius-md);padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <div style="font-size:0.8rem;font-weight:600;color:var(--text-mid);display:flex;align-items:center;gap:4px;">
-        Importar do Dataset:
+        Importar do PubMed (Inglês):
       </div>
       <form id="pubmed-scrape-form" style="display:flex;align-items:center;gap:8px;margin:0;">
-        <input type="text" name="query" id="scrape-query" required placeholder="ex: diabetes, vasculite"
+        <input type="text" name="query" id="scrape-query" required placeholder="ex: cancer, diabetes"
           style="padding:6px 12px;border:1px solid var(--cream-border);border-radius:var(--radius-sm);font-size:0.8rem;width:150px;outline:none;">
         <select name="limit" id="scrape-limit"
           style="padding:6px 12px;border:1px solid var(--cream-border);border-radius:var(--radius-sm);font-size:0.8rem;outline:none;background:#fff;cursor:pointer;">
@@ -51,7 +50,7 @@
     style="margin-top:14px;font-size:0.82rem;display:none;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius-sm);">
     <span class="spinner"
       style="display:inline-block;width:14px;height:14px;border:2px solid var(--text-faint);border-top-color:var(--forest);border-radius:50%;animation:spin 1s linear infinite;"></span>
-    <span id="scrape-status-text">A pesquisar e importar casos clínicos do dataset SPMI...</span>
+    <span id="scrape-status-text">A pesquisar e importar artigos científicos oficiais do PubMed...</span>
   </div>
 </div>
 
@@ -184,7 +183,7 @@
             style="display:none; align-items:center; gap:8px; font-size:0.8rem; color:var(--text-mid);">
             <span class="spinner"
               style="display:inline-block;width:14px;height:14px;border:2px solid var(--text-faint);border-top-color:var(--forest);border-radius:50%;animation:spin 1s linear infinite;"></span>
-            A processar resposta com o modelo XLM-RoBERTa...
+            A processar resposta com o modelo Modelo Nativo Portugues...
           </div>
           <div class="qa-answer-box" style="display:none;">
             <div

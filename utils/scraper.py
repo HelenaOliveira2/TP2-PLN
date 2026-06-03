@@ -173,6 +173,20 @@ def scrape_and_save_articles(query: str, max_results: int = 10) -> int:
                 if not abstract or len(abstract) <= 50:
                     continue
                     
+                # ---------------- BÓNUS EXTRA: TRADUÇÃO AUTOMÁTICA ----------------
+                try:
+                    from deep_translator import GoogleTranslator
+                    translator = GoogleTranslator(source='en', target='pt')
+                    title = translator.translate(title)
+                    
+                    # O Google Translate tem um limite de ~5000 caracteres, mas os abstracts raramente passam disso
+                    if len(abstract) > 4900:
+                        abstract = abstract[:4900]
+                    abstract = translator.translate(abstract)
+                except Exception as e:
+                    print(f"Erro ao traduzir (mantendo em Inglês): {e}")
+                # ------------------------------------------------------------------
+                
                 # Extrair Autores (AuthorList)
                 authors_list = []
                 author_nodes = soup.find_all("Author")

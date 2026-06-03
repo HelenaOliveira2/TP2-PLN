@@ -198,19 +198,18 @@
       </div>
 
       <!-- Ações -->
-      <div style="display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--cream-border);align-items:center;">
+      <div
+        style="display:flex;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--cream-border);align-items:center;">
         <a class="btn btn-ghost btn-sm" href="{{ url_for('gestao') }}?tab=edit&edit={{ key }}&edit_key={{ key }}">
           <i class="fi fi-rr-edit" style="margin-right:4px;"></i>Editar
         </a>
-        <form method="POST" action="{{ url_for('gestao_delete') }}" style="display:inline;margin:0;" onsubmit="return confirm('Tem a certeza que deseja apagar o termo &quot;{{ term }}&quot; permanentemente?');">
-          <input type="hidden" name="key" value="{{ key }}">
-          <input type="hidden" name="confirm" value="1">
-          <input type="hidden" name="next_url" value="{{ request.full_path }}">
-          <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--danger);border-color:rgba(239,68,68,0.2);display:inline-flex;align-items:center;gap:4px;">
-            <i class="fi fi-rr-trash"></i>Apagar
-          </button>
-        </form>
-        <a class="btn btn-ghost btn-sm" href="{{ url_for('ir_qa') }}?q={{ term | urlencode }}" style="margin-left:auto;">
+        <button type="button" class="btn btn-ghost btn-sm"
+          style="color:var(--danger);border-color:rgba(239,68,68,0.2);display:inline-flex;align-items:center;gap:4px;"
+          onclick="document.getElementById('customDeleteKey').value = '{{ key }}'; document.getElementById('customDeleteModal').showModal();">
+          <i class="fi fi-rr-trash"></i>Apagar
+        </button>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('ir_qa') }}?q={{ term | urlencode }}"
+          style="margin-left:auto;">
           <i class="fi fi-rr-document-signed" style="margin-right:4px;"></i>Ver artigos
         </a>
       </div>
@@ -219,8 +218,62 @@
   {% endfor %}
 </div>
 
+<!-- Controlo de Paginação (Código em Jinja) -->
+{% if total_pages > 1 %}
+<div
+  style="display:flex; justify-content:center; gap:12px; margin-top:32px; padding:20px 0; border-top:1px solid var(--cream-border);">
+  {% if page > 1 %}
+  <a class="btn btn-ghost"
+    href="{{ url_for('pesquisa', q=query, cat=cat_filter, src=src_filter, lang=lang_filter, sort=sort, has_def=1 if has_def else 0, has_syn=1 if has_syn else 0, page=page-1) }}">
+    <i class="fi fi-rr-angle-left"></i> Anterior
+  </a>
+  {% else %}
+  <button class="btn btn-ghost" disabled style="opacity:0.5;cursor:not-allowed;"><i class="fi fi-rr-angle-left"></i>
+    Anterior</button>
+  {% endif %}
 
+  <div style="display:flex; align-items:center; font-size:0.9rem; font-weight:600; color:var(--text-mid);">
+    Página {{ page }} de {{ total_pages }}
+  </div>
+
+  {% if page < total_pages %} <a class="btn btn-ghost"
+    href="{{ url_for('pesquisa', q=query, cat=cat_filter, src=src_filter, lang=lang_filter, sort=sort, has_def=1 if has_def else 0, has_syn=1 if has_syn else 0, page=page+1) }}">
+    Seguinte <i class="fi fi-rr-angle-right"></i>
+    </a>
+    {% else %}
+    <button class="btn btn-ghost" disabled style="opacity:0.5;cursor:not-allowed;">Seguinte <i
+        class="fi fi-rr-angle-right"></i></button>
+    {% endif %}
+</div>
+{% endif %}
 
 {% endif %}
+
+<dialog id="customDeleteModal"
+  style="border:none; border-radius:12px; padding:24px; box-shadow:0 10px 25px rgba(0,0,0,0.2); max-width:400px; width:90%; font-family:inherit; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); margin:0;">
+  <h3 style="margin-top:0; color:var(--text-dark); display:flex; align-items:center; gap:8px;">
+    <i class="fi fi-rs-triangle-warning" style="color:var(--danger);"></i> Confirmar Eliminação
+  </h3>
+  <p style="color:var(--text-mid); margin-bottom:24px; font-size:0.95rem;">
+    Tem a certeza absoluta que deseja apagar este termo permanentemente? Esta ação não pode ser desfeita.
+  </p>
+  <div style="display:flex; gap:12px; justify-content:flex-end;">
+    <button type="button" class="btn btn-ghost"
+      onclick="document.getElementById('customDeleteModal').close()">Cancelar</button>
+    <form method="POST" action="{{ url_for('gestao_delete') }}" style="margin:0;">
+      <input type="hidden" name="key" id="customDeleteKey" value="">
+      <input type="hidden" name="confirm" value="1">
+      <input type="hidden" name="next_url" value="{{ request.full_path }}">
+      <button type="submit" class="btn btn-danger">Sim, apagar</button>
+    </form>
+  </div>
+</dialog>
+
+<style>
+  dialog::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+  }
+</style>
 
 {% endblock %}

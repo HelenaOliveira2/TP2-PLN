@@ -6,60 +6,82 @@ Permite aos utilizadores fazer perguntas em Português sobre textos em Inglês.
 
 from typing import Dict, Any, Optional
 
-# Variável global para guardar o modelo na memória (lazy loading)
-_qa_pipeline = None
+import os
+import torch
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering
 
-def get_qa_pipeline():
+# Variáveis globais para guardar o modelo na memória (lazy loading)
+_tokenizer = None
+_model = None
+
+def get_qa_model():
     """
-    Carrega o modelo de Question Answering.
-    Usa 'deepset/xlm-roberta-base-squad2' que é multilingue e da arquitetura BERT.
+    Carrega o modelo Fine-Tuned (Treinado por nós para o Bónus)!
     """
-    global _qa_pipeline
-    if _qa_pipeline is None:
-        print("A carregar modelo de Question Answering (Multilingue)...")
-        from transformers import pipeline
+    global _tokenizer, _model
+    if _model is None:
+        _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        model_path = os.path.join(_PROJECT_ROOT, "my_awesome_qa_model")
         
-        # Este modelo XLM-RoBERTa permite perguntas em PT e contexto em EN
-        _qa_pipeline = pipeline(
-            "question-answering",
-            model="deepset/xlm-roberta-base-squad2",
-            tokenizer="deepset/xlm-roberta-base-squad2"
-        )
-    return _qa_pipeline
+        if os.path.exists(model_path):
+            print("A carregar o NOSSO modelo de QA Treinado (Fine-Tuned)...")
+        else:
+            print("Aviso: Modelo treinado não encontrado, a carregar modelo pre-treinado tinybert...")
+            model_path = "pierreguillou/bert-base-cased-squad-v1.1-portuguese"
+            
+        _tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
+        _model = AutoModelForQuestionAnswering.from_pretrained(model_path)
+    return _tokenizer, _model
 
 def answer_question(context: str, question: str) -> Dict[str, Any]:
     """
     Recebe um contexto (resumo do artigo) e uma pergunta.
-    Retorna a resposta exata extraída do texto.
+    Retorna a resposta exata extraída do texto usando o nosso modelo fine-tuned.
     """
     if not context or not question:
         return {"error": "O contexto ou a pergunta estão vazios."}
 
     try:
-        qa_pipeline = get_qa_pipeline()
+        tokenizer, model = get_qa_model()
         
-        # A pipeline devolve um dicionário com: score, start, end, answer
-        result = qa_pipeline(question=question, context=context)
+        # Prepara os dados matematicamente para a rede neuronal
+        inputs = tokenizer(question, context, return_tensors="pt", max_length=512, truncation="only_second")
         
+        # Inferência direta (Bypass da pipeline)
+        with torch.no_grad():
+            outputs = model(**inputs)
+            
+        # Calcular início e fim da resposta usando probabilidades
+        answer_start_idx = torch.argmax(outputs.start_logits)
+        answer_end_idx = torch.argmax(outputs.end_logits) + 1
+        
+        answer_tokens = inputs["input_ids"][0][answer_start_idx:answer_end_idx]
+        answer = tokenizer.decode(answer_tokens, skip_special_tokens=True).strip()
+        
+        # Calcular confiança do modelo (score)
+        start_probs = torch.nn.functional.softmax(outputs.start_logits, dim=-1)
+        end_probs = torch.nn.functional.softmax(outputs.end_logits, dim=-1)
+        score = float((torch.max(start_probs) + torch.max(end_probs)) / 2) * 100
+        
+        if answer_start_idx >= answer_end_idx or not answer:
+            answer = ""
+            score = 0.0
+            
         return {
-            "answer": result.get("answer", ""),
-            "score": round(result.get("score", 0.0) * 100, 1), # Converter para percentagem
-            "start": result.get("start", 0),
-            "end": result.get("end", 0)
+            "answer": answer,
+            "score": round(score, 1),
+            "start": int(answer_start_idx),
+            "end": int(answer_end_idx)
         }
     except Exception as e:
         print(f"Erro ao processar a pergunta: {e}")
         return {"error": str(e)}
 
 if __name__ == "__main__":
-    # Teste rápido do script
     sample_context = "Neurodevelopmental impairments are common in children with congenital heart disease."
-    sample_question = "Quais as doenças mais comuns em crianças com problemas de coração?"
+    sample_question = "What are the common impairments?"
     
-    print("A testar motor QA Multilingue...")
-    print(f"Contexto (EN): {sample_context}")
-    print(f"Pergunta (PT): {sample_question}")
-    
+    print("A testar motor QA com modelo treinado (BÓNUS)...")
     resposta = answer_question(sample_context, sample_question)
     print("\nResultado:")
     print(resposta)
