@@ -11,7 +11,7 @@ import time
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 import sys
-from utils.data_manager import get_data, save_data
+
 
 # Cabeçalho User-Agent recomendado pelas políticas da Wikimedia/Wikidata
 HEADERS = {
@@ -226,6 +226,7 @@ def batch_enrich(limit=10, force=False):
     """
    
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from flask_app import get_data, save_data
     
     data = get_data()
     count = 0
