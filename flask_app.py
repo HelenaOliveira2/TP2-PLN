@@ -1,9 +1,3 @@
-"""
-MedLex Explorer — Aplicação Flask principal.
-Rotas: /, /dashboard, /pesquisa, /gestao, /ir_qa
-CRUD: /gestao/add, /gestao/update, /gestao/delete
-"""
-
 from flask import Flask, render_template, request, redirect, url_for, flash
 import json
 import os
@@ -12,6 +6,9 @@ from utils.enricher import enrich_term_data
 from utils.scraper import scrape_and_save_articles, load_articles
 from utils.search_engine import search_articles, SBERTSearch
 from utils.qa_engine import answer_question
+import re
+from markupsafe import Markup
+import string
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Configurações e Dados (Antigo data_manager.py)
@@ -24,8 +21,6 @@ app.secret_key = "medlex-secret-2025"   # necessário para flash messages
 def highlight_filter(text, query):
     if not query or not text:
         return text
-    import re
-    from markupsafe import Markup
     text_str = str(text)
     pattern = re.compile(rf"({re.escape(query)})", re.IGNORECASE)
     highlighted = pattern.sub(r"<u>\1</u>", text_str)
@@ -37,25 +32,25 @@ _PROJECT_ROOT = Path(__file__).resolve().parent
 DATA_PATH = _PROJECT_ROOT / "DICIONARIO_GIGANTE_FINAL.json"
 
 # Cache simples em memória (dict mutável)
-_cache: dict | None = None
+_cache = None
 
-def _load_raw() -> dict:
+def _load_raw():
     with open(DATA_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def get_data() -> dict:
+def get_data():
     global _cache
     if _cache is None:
         _cache = _load_raw()
     return _cache
 
-def save_data(data: dict) -> None:
+def save_data(data):
     global _cache
     with open(DATA_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     _cache = data
 
-def add_term(key: str, entry: dict) -> bool:
+def add_term(key, entry):
     data = get_data()
     if key in data:
         return False
@@ -63,13 +58,13 @@ def add_term(key: str, entry: dict) -> bool:
     save_data(data)
     return True
 
-def update_term(key: str, entry: dict) -> bool:
+def update_term(key, entry):
     data = get_data()
     data[key] = entry
     save_data(data)
     return True
 
-def delete_term(key: str) -> bool:
+def delete_term(key):
     data = get_data()
     if key not in data:
         return False
@@ -77,7 +72,7 @@ def delete_term(key: str) -> bool:
     save_data(data)
     return True
 
-def get_all_categories() -> list[str]:
+def get_all_categories():
     cats = set()
     for entry in get_data().values():
         for c in entry.get("categorias", []):
@@ -85,14 +80,14 @@ def get_all_categories() -> list[str]:
                 cats.add(c.strip())
     return sorted(cats)
 
-def get_all_sources() -> list[str]:
+def get_all_sources():
     sources = set()
     for entry in get_data().values():
         for s in entry.get("fontes", []):
             sources.add(s.split("/")[0])
     return sorted(sources)
 
-def get_stats() -> dict:
+def get_stats():
     data = get_data()
     total = len(data)
     with_def  = sum(1 for e in data.values() if e.get("definicoes"))
@@ -101,9 +96,9 @@ def get_stats() -> dict:
     with_en   = sum(1 for e in data.values() if e.get("traducoes", {}).get("en"))
     with_es   = sum(1 for e in data.values() if e.get("traducoes", {}).get("es"))
 
-    cat_counts: dict[str, int] = {}
-    all_langs: set[str] = set()
-    src_counts: dict[str, int] = {}
+    cat_counts = {}
+    all_langs = set()
+    src_counts = {}
 
     for entry in data.values():
         for c in entry.get("categorias", []):
@@ -139,24 +134,29 @@ def get_stats() -> dict:
 # Helpers
 # ══════════════════════════════════════════════════════════════════════════════
 
-def split_comma(s: str) -> list[str]:
+def split_comma(s):
     return [x.strip() for x in s.split(",") if x.strip()]
 
-def split_space(s: str) -> list[str]:
+def split_space(s):
     return [x.strip() for x in s.split() if x.strip()]
 
-def score_entry(key: str, entry: dict, q: str) -> int:
+def score_entry(key, entry, q):
     q = q.lower()
     score = 0
-    if q in key:                                              score += 10
-    if q in entry.get("termo_principal", "").lower():         score += 8
+    if q in key:                                              
+        score += 10
+    if q in entry.get("termo_principal", "").lower():        
+        score += 8
     for syn in entry.get("sinonimos", []):
-        if q in syn.lower():                                  score += 6
+        if q in syn.lower():                                  
+            score += 6
     for d in entry.get("definicoes", []):
-        if q in d.lower():                                    score += 4
+        if q in d.lower():                                    
+            score += 4
     for lang_vals in entry.get("traducoes", {}).values():
         for t in (lang_vals if isinstance(lang_vals, list) else [lang_vals]):
-            if q in str(t).lower():                           score += 3
+            if q in str(t).lower():                           
+                score += 3
     return score
 
 
@@ -187,7 +187,7 @@ def dashboard():
     lang_map    = {"pt": "Português", "en": "Inglês", "es": "Espanhol",
                    "fr": "Francês",   "la": "Latim",  "ar": "Árabe",
                    "de": "Alemão",    "zh": "Chinês",  "ja": "Japonês"}
-    lang_counts: dict[str, int] = {}
+    lang_counts = {}
     for entry in data.values():
         for lang, vals in entry.get("traducoes", {}).items():
             if vals and lang and lang != ",":
@@ -225,11 +225,8 @@ def dashboard():
 # Pesquisa
 # ══════════════════════════════════════════════════════════════════════════════
 
-PAGE_SIZE = 20
-
 @app.get("/pesquisa")
 def pesquisa():
-    import string
     data        = get_data()
     all_cats    = get_all_categories()
     all_srcs    = get_all_sources()
