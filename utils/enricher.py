@@ -1,12 +1,10 @@
-"""
-Módulo de Enriquecimento de Dados — MedLex Explorer.
-Comunica com as APIs públicas do Wikidata e Wikipedia para enriquecer termos médicos.
-"""
-
 import requests
 import json
 import time
 from typing import Dict, List, Any, Optional
+from pathlib import Path
+import sys
+from utils.data_manager import get_data, save_data
 
 # Cabeçalho User-Agent recomendado pelas políticas da Wikimedia/Wikidata
 HEADERS = {
@@ -191,10 +189,8 @@ def batch_enrich(limit: int = 10, force: bool = False):
     Enriquece termos no dicionário JSON local que não têm definições.
     Limita o número de termos processados de cada vez para respeitar as APIs.
     """
-    from pathlib import Path
-    import sys
+   
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from utils.data_manager import get_data, save_data
     
     data = get_data()
     count = 0
@@ -275,7 +271,6 @@ def batch_enrich(limit: int = 10, force: bool = False):
 
 if __name__ == "__main__":
     # Teste rápido do script
-    import sys
     if len(sys.argv) > 1:
         term_to_test = sys.argv[1]
         print(f"Testando enriquecimento de: '{term_to_test}'")
