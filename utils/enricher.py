@@ -1,6 +1,8 @@
 """
-Módulo de Enriquecimento de Dados — MedLex Explorer.
-Comunica com as APIs públicas do Wikidata e Wikipedia para enriquecer termos médicos.
+Módulo de Enriquecimento de Dados Médicos — MedLex Explorer.
+Este módulo liga a aplicação às APIs do Wikidata e da Wikipedia para recolher 
+informações médicas automaticamente. O seu objetivo é preencher os termos do 
+nosso dicionário local (JSON) com definições, sinónimos, categorias e traduções.
 """
 
 import requests
@@ -16,8 +18,13 @@ HEADERS = {
 WIKIDATA_URL = "https://www.wikidata.org/w/api.php"
 WIKIPEDIA_URL = "https://pt.wikipedia.org/w/api.php"
 
-def search_wikidata_entity(term: str) -> Optional[str]:
-    """Procura uma entidade no Wikidata pelo termo em português e retorna o ID (Qid)."""
+def search_wikidata_entity(term):
+    """
+    Executa a Resolução de Entidade (Entity Resolution) no Wikidata.
+    A partir de um termo de pesquisa livre em português (ex: 'Diabetes'), interroga o endpoint 
+    `wbsearchentities` para localizar a entidade correspondente e devolver o seu 
+    Identificador Único Universal (QID - ex: 'Q12345'). Retorna None em caso de falha.
+    """
     params = {
         "action": "wbsearchentities",
         "search": term,
@@ -36,8 +43,13 @@ def search_wikidata_entity(term: str) -> Optional[str]:
         print(f"Erro ao pesquisar Wikidata para '{term}': {e}")
     return None
 
-def get_entity_labels(entity_ids: List[str]) -> Dict[str, str]:
-    """Obtém os rótulos em português para uma lista de IDs de entidades."""
+def get_entity_labels(entity_ids):
+    """
+    Descodifica iterativamente uma lista de QIDs do Wikidata (ex: ['Q146', 'Q1333']) para os seus 
+    respetivos rótulos textuais (Labels) na língua portuguesa.
+    Utiliza o endpoint `wbgetentities` restrito ao idioma 'pt' para otimização de tráfego de rede.
+    Retorna um dicionário mapeando QID -> Rótulo_Em_PT.
+    """
     if not entity_ids:
         return {}
     params = {
@@ -61,8 +73,15 @@ def get_entity_labels(entity_ids: List[str]) -> Dict[str, str]:
         print(f"Erro ao obter rótulos para {entity_ids}: {e}")
     return labels
 
-def fetch_wikidata_details(qid: str) -> Dict[str, Any]:
-    """Recupera detalhes da entidade Wikidata: descrição, sinónimos, traduções e categorias."""
+def fetch_wikidata_details(qid):
+    """
+    Extrai e serializa os metadados profundos de uma entidade clínica no Wikidata a partir do seu QID.
+    Mapeia estruturalmente:
+    - Descrições textuais (descriptions) em português.
+    - Sinónimos registados (aliases) em português.
+    - Traduções estrangeiras (labels e aliases em inglês e espanhol).
+    - Relações Taxonómicas (extraídas através das propriedades P31 'instância de' e P279 'subclasse de').
+    """
     params = {
         "action": "wbgetentities",
         "ids": qid,
@@ -119,7 +138,7 @@ def fetch_wikidata_details(qid: str) -> Dict[str, Any]:
                         category_qids.append(f"Q{cat_qid}")
                         
         if category_qids:
-            # Obter os nomes amigáveis em português destas categorias
+            # Obter os nomes em português destas categorias
             labels_map = get_entity_labels(category_qids[:5])  # limitar a 5 para não sobrecarregar
             res["categorias"] = list(labels_map.values())
             
@@ -128,8 +147,13 @@ def fetch_wikidata_details(qid: str) -> Dict[str, Any]:
         
     return res
 
-def fetch_wikipedia_summary(term: str) -> Optional[str]:
-    """Obtém o resumo introdutório de um artigo na Wikipedia em Português."""
+def fetch_wikipedia_summary(term):
+    """
+    Atua como um mecanismo de Fallback Semântico. 
+    Interroga a API REST da Wikipedia em Português para extrair estritamente o parágrafo 
+    introdutório de um artigo médico (exintro=True), ignorando tabelas e blocos HTML.
+    É acionado caso o Wikidata não possua uma definição longa ou conclusiva.
+    """
     params = {
         "action": "query",
         "prop": "extracts",
@@ -153,7 +177,7 @@ def fetch_wikipedia_summary(term: str) -> Optional[str]:
         print(f"Erro ao obter resumo da Wikipedia para '{term}': {e}")
     return None
 
-def enrich_term_data(term: str) -> Dict[str, Any]:
+def enrich_term_data(term):
     """
     Enriquece um termo combinando Wikidata e Wikipedia.
     Retorna um dicionário com os campos enriquecidos.
@@ -186,10 +210,16 @@ def enrich_term_data(term: str) -> Dict[str, Any]:
 # Script CLI para enriquecimento em lote (Batch Mode)
 # ══════════════════════════════════════════════════════════════════════════════
 
-def batch_enrich(limit: int = 10, force: bool = False):
+def batch_enrich(limit=10, force=False):
     """
-    Enriquece termos no dicionário JSON local que não têm definições.
-    Limita o número de termos processados de cada vez para respeitar as APIs.
+    Enriquecimento assíncrono em lote do dataset inteiro.
+    Analisa os metadados de todos os termos presentes no dicionário local em memória.
+    
+    Estratégia de Processamento:
+    - Executa um 'Merge' seguro (Fusão de Dados), preservando os dados pré-existentes.
+    - Realiza chamadas limitadas pela variável 'limit' para evitar o bloqueio por Rate Limiting 
+      (HTTP 429 Too Many Requests) nos servidores da Wikimedia.
+    - Se 'force=True', ignora a verificação de propriedades vazias e força a sincronização.
     """
     from pathlib import Path
     import sys
@@ -205,29 +235,30 @@ def batch_enrich(limit: int = 10, force: bool = False):
         if count >= limit:
             break
             
+        # O 'termo' atua como a chave primária da pesquisa 
         term = entry.get("termo_principal", key)
         has_def = bool(entry.get("definicoes"))
         has_syn = bool(entry.get("sinonimos"))
         
-        # Enriquecer se não tiver definição, ou se a opção force=True estiver ativa
+        # Otimização: Saltar termos que já possuem definição, evitando pedidos HTTP redundantes
+        # A menos que o parâmetro 'force' seja invocado explicitamente
         if not has_def or force:
             print(f"A processar termo: '{term}'...")
             enrichment = enrich_term_data(term)
             
             updated = False
             
-            # Adicionar definição se obtida
+            # Gestão da Definição: Injetar a definição capturada sem sobrescrever edições manuais antigas
             if enrichment["definicao"]:
-                # Manter definição antiga se existir e não forçarmos
                 if not entry.get("definicoes"):
                     entry["definicoes"] = [enrichment["definicao"]]
                 elif force:
-                    # Colocar à cabeça
+                    # Inserção da nova definição no início da lista para prioridade de visualização
                     if enrichment["definicao"] not in entry["definicoes"]:
                         entry["definicoes"].insert(0, enrichment["definicao"])
                 updated = True
                 
-            # Adicionar sinónimos
+            # Fusão de Sinónimos: Garante que não há duplicação de entidades
             if enrichment["sinonimos"]:
                 existing_syns = entry.get("sinonimos", [])
                 for syn in enrichment["sinonimos"]:
@@ -236,7 +267,7 @@ def batch_enrich(limit: int = 10, force: bool = False):
                 entry["sinonimos"] = existing_syns
                 updated = True
                 
-            # Adicionar categorias
+            # Fusão de Categorias Taxonómicas
             if enrichment["categorias"]:
                 existing_cats = entry.get("categorias", [])
                 for cat in enrichment["categorias"]:
@@ -247,7 +278,7 @@ def batch_enrich(limit: int = 10, force: bool = False):
                 entry["categorias"] = existing_cats
                 updated = True
                 
-            # Adicionar traduções
+            # Sincronização de Traduções
             for lang in ["en", "es"]:
                 if enrichment["traducoes"][lang]:
                     trads = entry.setdefault("traducoes", {})

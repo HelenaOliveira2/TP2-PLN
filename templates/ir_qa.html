@@ -68,7 +68,7 @@
     <select name="method" class="filter-select"
       style="width:100%;height:100%;padding:10px 14px;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);">
       <option value="tfidf" {{ 'selected' if method=='tfidf' }}>TF-IDF (Frequência - Raiz)</option>
-      <option value="sbert" {{ 'selected' if method=='sbert' }}>SBERT (Multilingue - Profundo)</option>
+      <option value="sbert" {{ 'selected' if method=='sbert' }}>SBERT (MedLink Bi-Encoder)</option>
     </select>
 
     <!-- Botão de pesquisa -->
@@ -113,7 +113,8 @@
             <strong style="color:var(--text-mid);">Autor(es):</strong> {{ art.autores | highlight(query) }}
           </div>
           <div style="font-size:0.86rem;display:flex;gap:16px;flex-wrap:wrap;color:var(--text-mid);">
-            <span><strong style="color:var(--text-mid);">Revista:</strong> <em>{{ art.revista | highlight(query) }}</em></span>
+            <span><strong style="color:var(--text-mid);">Revista:</strong> <em>{{ art.revista | highlight(query)
+                }}</em></span>
             <span><strong style="color:var(--text-mid);">Data:</strong> {{ art.data }}</span>
           </div>
           {% if art.termo_pesquisa %}
@@ -168,12 +169,13 @@
         style="display:none;background:var(--cream);border:1px solid var(--cream-border);border-radius:var(--radius-md);padding:16px;margin-top:14px;">
         <div
           style="font-weight:600;font-size:0.85rem;color:var(--text-dark);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-          <span>Pergunta à Inteligência Artificial (Multilingue):</span>
+          <span>Pergunta à Inteligência Artificial (QA - BERT):</span>
         </div>
 
         <form class="qa-form" data-pmid="{{ art.pmid }}" style="display:flex;gap:8px;margin-bottom:0;">
           <!-- O contexto oculto -->
-          <input type="hidden" name="context" value="Título: {{ art.titulo }}&#10;Autores: {{ art.autores }}&#10;Revista: {{ art.revista }}&#10;Data de Publicação: {{ art.data }}&#10;Palavras-chave: {{ art.termo_pesquisa }}&#10;&#10;Resumo:&#10;{{ art.resumo }}">
+          <input type="hidden" name="context"
+            value="Título: {{ art.titulo }}&#10;Autores: {{ art.autores }}&#10;Revista: {{ art.revista }}&#10;Data de Publicação: {{ art.data }}&#10;Palavras-chave: {{ art.termo_pesquisa }}&#10;&#10;Resumo:&#10;{{ art.resumo }}">
           <input type="text" name="question" required
             placeholder="Escreve a tua pergunta em Português sobre este artigo..."
             class="search-input qa-question-input"
@@ -292,7 +294,7 @@
       statusDiv.style.background = 'var(--forest-pale)';
       statusDiv.style.border = '1px solid var(--forest-mid)';
       statusDiv.style.color = 'var(--forest)';
-      statusText.textContent = `A pesquisar no dataset de casos clínicos SPMI por "${query}"... `;
+      statusText.textContent = `A pesquisar e traduzir artigos do PubMed sobre "${query}"... Isto pode demorar alguns segundos.`;
       const spinner = statusDiv.querySelector('.spinner');
       if (spinner) spinner.style.display = 'inline-block';
 
@@ -320,7 +322,7 @@
             statusDiv.style.color = 'var(--forest)';
             document.getElementById('scrape-query').value = '';
           } else {
-            statusText.textContent = 'Erro ao processar o dataset SPMI.';
+            statusText.textContent = 'Erro ao importar os artigos do PubMed.';
             statusDiv.style.color = 'var(--danger)';
           }
           const spinner = statusDiv.querySelector('.spinner');
@@ -334,7 +336,7 @@
           console.error(err);
           btnScrape.disabled = false;
           btnScrape.style.opacity = 1;
-          statusText.textContent = 'Erro ao pesquisar ou processar o dataset SPMI.';
+          statusText.textContent = 'Erro de rede ao comunicar com o PubMed.';
           statusDiv.style.background = 'var(--danger-pale)';
           statusDiv.style.border = '1px solid #fca5a5';
           statusDiv.style.color = 'var(--danger)';

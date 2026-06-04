@@ -1,17 +1,6 @@
-"""
-MedLex Explorer — Script de Bónus (Fase 4): Fine-Tuning do modelo QA
-Este ficheiro é a cópia EXATA do tutorial oficial do HuggingFace (passo a passo):
-Link: https://huggingface.co/docs/transformers/tasks/question_answering
-
-As únicas adaptações foram: 
-1. Em vez de usar o dataset "squad" genérico, usamos um pequeno dicionário com dados médicos (para cumprir o vosso enunciado).
-2. O nome do modelo que vamos afinar é o nosso multilingue ("deepset/xlm-roberta-base-squad2").
-"""
-
-# 1. CARREGAR OS DADOS (No tutorial fazem: load_dataset("squad"))
+#CARREGAR OS DADOS 
 from datasets import Dataset
 
-# Criamos um "squad" médico simulado para cumprir o requisito de dataset clínico
 dados_medicos = {
     "id": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
     "title": ["Meningite", "Coração", "Diabetes", "Hipertensão", "Asma", "Tuberculose", "Artrite", "Alzheimer", "Enxaqueca", "Glaucoma"],
@@ -52,21 +41,41 @@ dados_medicos = {
         {"text": ["pressão intraocular elevada"], "answer_start": [40]}
     ]
 }
+
+#raw_datasets = load_dataset("squad_v1_pt")
+#squad = Dataset.from_dict(raw_datasets)
+
+# -----------------------------------------------------------------------------
+# PASSO 1: CARREGAMENTO DO DATASET
+# Em vez de carregar um dataset genérico (ex: "squad" em inglês) via HuggingFace Hub,
+# injetamos um dataset médico estruturado localmente para cumprir os requisitos do projeto.
+# Cada entrada requer 3 componentes:
+#   - question: A string de interrogação.
+#   - context: O texto base onde reside a resposta.
+#   - answers: Dicionário contendo o excerto da resposta exata e a posição do char inicial (answer_start).
+# -----------------------------------------------------------------------------
 squad = Dataset.from_dict(dados_medicos)
-# Dividir em treino e teste (Exatamente como no tutorial)
+
+# Dividir estatisticamente o corpus em subconjuntos de Treino (50%) e Teste/Avaliação (50%)
 squad = squad.train_test_split(test_size=0.5)
 
-
-# 2. CARREGAR TOKENIZADOR
 from transformers import AutoTokenizer
-# 2. DEFINIR O MODELO E TOKENIZER
-# O modelo LIAAD estava corrompido no HuggingFace, voltamos ao original!
+# -----------------------------------------------------------------------------
+# PASSO 2: CARREGAMENTO DO TOKENIZADOR E MODELO PRÉ-TREINADO
+# O Tokenizador converte texto legível em vetores numéricos de ID (Input IDs) e
+# gera máscaras de atenção (Attention Masks) essenciais para a arquitetura Transformers.
+# Utilizamos o modelo BERT pré-treinado em PT para maximizar a precisão gramatical.
+# -----------------------------------------------------------------------------
 model_name = "pierreguillou/bert-base-cased-squad-v1.1-portuguese"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
 
 
-# 3. FUNÇÃO DE PRÉ-PROCESSAMENTO (Exatamente igual ao tutorial)
+# -----------------------------------------------------------------------------
+# PASSO 3: PRÉ-PROCESSAMENTO VETORIAL (MAPEAR TEXTO PARA TENSORS)
+# Esta função mapeia as coordenadas dos caracteres (texto humano)
+# para coordenadas de tokens (IDs numéricos gerados pelo tokenizador).
+# -----------------------------------------------------------------------------
 def preprocess_function(examples):
     questions = [q.strip() for q in examples["question"]]
     inputs = tokenizer(
@@ -119,28 +128,36 @@ def preprocess_function(examples):
     return inputs
 
 
-# 4. APLICAR PRÉ-PROCESSAMENTO AO DATASET
+# -----------------------------------------------------------------------------
+# PASSO 4: APLICAÇÃO EM LOTE (BATCH MAPPING)
+# -----------------------------------------------------------------------------
 tokenized_squad = squad.map(preprocess_function, batched=True, remove_columns=squad["train"].column_names)
 
 
-# 5. DATA COLLATOR (Passo do tutorial que faltava!)
+# -----------------------------------------------------------------------------
+# PASSO 5: DATA COLLATOR
+# Prepara os lotes (batches) dinâmicos e aplica "padding" se necessário para
+# garantir que todos os tensores têm o mesmo tamanho durante a época de treino.
+# -----------------------------------------------------------------------------
 from transformers import DefaultDataCollator
 data_collator = DefaultDataCollator()
 
 
-# 6. MODELO E ARGUMENTOS DE TREINO (Exatamente como no tutorial)
+# -----------------------------------------------------------------------------
+# PASSO 6: MODELO EXTRATIVO (HEAD) E HIPERPARÂMETROS DE TREINO (EPOCHS E LEARNING RATE)
+# -----------------------------------------------------------------------------
 from transformers import AutoModelForQuestionAnswering, TrainingArguments, Trainer
 model = AutoModelForQuestionAnswering.from_pretrained(model_name)
 
 training_args = TrainingArguments(
     output_dir="my_awesome_qa_model",
-    eval_strategy="epoch",  # corrigido para a versão mais recente do transformers
-    learning_rate=2e-5,
+    eval_strategy="epoch",  # Avaliar o erro em cada época (epoch)
+    learning_rate=2e-5,     # Taxa de aprendizagem lenta (Fine-Tuning) para não esquecer os pesos antigos
     per_device_train_batch_size=2,
     per_device_eval_batch_size=2,
-    num_train_epochs=3,
+    num_train_epochs=3,     # O dataset vai ser processado 3 vezes
     weight_decay=0.01,
-    push_to_hub=False, # Não queremos publicar no site da HuggingFace
+    push_to_hub=False,      # Modelo fica apenas guardado localmente (Offline)
 )
 
 
@@ -155,9 +172,9 @@ trainer = Trainer(
 )
 
 
-# 8. TREINAR!
+# 8. TREINAR
 if __name__ == "__main__":
-    print("A iniciar o treino exatamente como no tutorial do HuggingFace...")
+    print("A iniciar o treino...")
     trainer.train()
     print("Treino concluído com sucesso!")
     

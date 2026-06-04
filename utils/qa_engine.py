@@ -1,7 +1,7 @@
 """
-MedLex Explorer — Motor de Question Answering (Fase 4).
-Utiliza um modelo BERT multilingue pré-treinado no HuggingFace.
-Permite aos utilizadores fazer perguntas em Português sobre textos em Inglês.
+MedLex Explorer — Motor de Question Answering.
+Utiliza a arquitetura BERT (fine-tuned localmente) para extração de respostas contextuais.
+Permite aos utilizadores fazer perguntas em Português sobre os resumos traduzidos para Português.
 """
 
 from typing import Dict, Any, Optional
@@ -16,7 +16,8 @@ _model = None
 
 def get_qa_model():
     """
-    Carrega o modelo Fine-Tuned (Treinado por nós para o Bónus)!
+    Carrega o modelo Fine-Tuned local (caso exista na pasta 'my_awesome_qa_model')
+    ou, como fallback, inicializa o modelo de base em língua portuguesa.
     """
     global _tokenizer, _model
     if _model is None:
@@ -33,10 +34,10 @@ def get_qa_model():
         _model = AutoModelForQuestionAnswering.from_pretrained(model_path)
     return _tokenizer, _model
 
-def answer_question(context: str, question: str) -> Dict[str, Any]:
+def answer_question(context, question):
     """
-    Recebe um contexto (resumo do artigo) e uma pergunta.
-    Retorna a resposta exata extraída do texto usando o nosso modelo fine-tuned.
+    Recebe um contexto (resumo clínico + metadados) e uma pergunta em linguagem natural.
+    Executa inferência na rede BERT e retorna o fragmento textual exato (extractive QA).
     """
     if not context or not question:
         return {"error": "O contexto ou a pergunta estão vazios."}
@@ -51,14 +52,14 @@ def answer_question(context: str, question: str) -> Dict[str, Any]:
         with torch.no_grad():
             outputs = model(**inputs)
             
-        # Calcular início e fim da resposta usando probabilidades
+        # Calcular início e fim da resposta usando as probabilidades máximas dos tensores
         answer_start_idx = torch.argmax(outputs.start_logits)
         answer_end_idx = torch.argmax(outputs.end_logits) + 1
         
         answer_tokens = inputs["input_ids"][0][answer_start_idx:answer_end_idx]
         answer = tokenizer.decode(answer_tokens, skip_special_tokens=True).strip()
         
-        # Calcular confiança do modelo (score)
+        # Calcular confiança do modelo (score) aplicando a função Softmax aos Logits brutos
         start_probs = torch.nn.functional.softmax(outputs.start_logits, dim=-1)
         end_probs = torch.nn.functional.softmax(outputs.end_logits, dim=-1)
         score = float((torch.max(start_probs) + torch.max(end_probs)) / 2) * 100

@@ -1,6 +1,6 @@
 """
 MedLex Explorer — Motores de Pesquisa Científica (IR).
-Implementa pesquisa por TF-IDF (de raiz), Word2Vec e SBERT.
+Implementa pesquisa por TF-IDF (de raiz) e SBERT.
 """
 
 import os
@@ -15,7 +15,6 @@ import numpy as np
 # Caminhos de dados
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 ARTIGOS_PATH = _PROJECT_ROOT / "data" / "artigos.json"
-W2V_MODEL_PATH = _PROJECT_ROOT / "data" / "medlex_w2v.model"
 SBERT_CACHE_PATH = _PROJECT_ROOT / "data" / "artigos_embeddings_sbert.pkl"
 
 # Lazy loader para SBERT (carrega apenas quando necessário)
@@ -26,11 +25,10 @@ def get_sbert_model():
     if _sbert_model is None:
         print("A carregar modelo SBERT (SentenceTransformer - MedLink Bi-Encoder)...")
         from sentence_transformers import SentenceTransformer
-        # Modelo leve multilingue (cerca de 420MB)
-        _sbert_model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+        _sbert_model = SentenceTransformer("lfcc/medlink-bi-encoder")
     return _sbert_model
 
-def clean_and_tokenize(text: str) -> List[str]:
+def clean_and_tokenize(text):
     """Limpa o texto e divide-o em tokens de palavras (minúsculas)."""
     if not text:
         return []
@@ -41,11 +39,11 @@ def clean_and_tokenize(text: str) -> List[str]:
     return tokens
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 1. OPÇÃO B: TF-IDF IMPLEMENTADO DE RAIZ
+# 1. OPÇÃO A: TF-IDF IMPLEMENTADO DE RAIZ
 # ══════════════════════════════════════════════════════════════════════════════
 
 class TFIDFSearch:
-    def __init__(self, articles: List[Dict[str, Any]]):
+    def __init__(self, articles):
         self.articles = articles
         self.N = len(articles)
         self.vocab = set()
@@ -55,6 +53,13 @@ class TFIDFSearch:
         self._build_index()
 
     def _build_index(self):
+        """
+        Gera a representação vetorial dispersa (Sparse Vectors) para todos os documentos da coleção.
+        Etapas:
+        1. Tokenização e cálculo das frequências de termo locais (TF).
+        2. Construção do vocabulário global e cálculo da frequência inversa de documento (IDF).
+        3. Multiplicação cruzada (TF * IDF) para gerar os vetores finais indexados.
+        """
         if self.N == 0:
             return
             
@@ -91,7 +96,7 @@ class TFIDFSearch:
                     vec[t] = tf * self.idf[t]
             self.doc_vectors.append(vec)
 
-    def search(self, query: str, top_n: int = 5) -> List[Tuple[Dict[str, Any], float]]:
+    def search(self, query, top_n=5):
         if self.N == 0:
             return []
             
@@ -122,7 +127,7 @@ class TFIDFSearch:
         results.sort(key=lambda x: x[1], reverse=True)
         return results[:top_n]
 
-    def _cosine_similarity(self, v1: Dict[str, float], v2: Dict[str, float]) -> float:
+    def _cosine_similarity(self, v1, v2):
         # Produto escalar
         dot_product = sum(v1[w] * v2.get(w, 0.0) for w in v1)
         # Normas
@@ -135,91 +140,18 @@ class TFIDFSearch:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 2. OPÇÃO A: WORD2VEC TREINADO LOCALMENTE (MÉDIA DE VETORES)
-# ══════════════════════════════════════════════════════════════════════════════
-
-class Word2VecSearch:
-    def __init__(self, articles: List[Dict[str, Any]]):
-        self.articles = articles
-        self.N = len(articles)
-        self.model = None
-        self.doc_vectors = []
-        self._load_and_index()
-
-    def _load_and_index(self):
-        if not W2V_MODEL_PATH.exists():
-            print("Aviso: Modelo Word2Vec local não encontrado. É necessário treinar primeiro.")
-            return
-            
-        from gensim.models import Word2Vec
-        self.model = Word2Vec.load(str(W2V_MODEL_PATH))
-        self.vector_size = self.model.vector_size
-        
-        # Calcular vetor médio para cada artigo
-        for art in self.articles:
-            text = f"{art.get('titulo', '')} {art.get('resumo', '')}"
-            tokens = clean_and_tokenize(text)
-            
-            # Média dos vetores das palavras do artigo que estão no vocabulário
-            vecs = [self.model.wv[w] for w in tokens if w in self.model.wv]
-            if vecs:
-                mean_vec = np.mean(vecs, axis=0)
-            else:
-                mean_vec = np.zeros(self.vector_size)
-            self.doc_vectors.append(mean_vec)
-
-    def search(self, query: str, top_n: int = 5) -> List[Tuple[Dict[str, Any], float]]:
-        if self.model is None or self.N == 0:
-            return []
-            
-        query_tokens = clean_and_tokenize(query)
-        if not query_tokens:
-            return []
-            
-        # Calcular vetor médio da query
-        query_vecs = [self.model.wv[w] for w in query_tokens if w in self.model.wv]
-        if not query_vecs:
-            return []
-            
-        query_vec = np.mean(query_vecs, axis=0)
-        
-        # Calcular similaridade de cosseno
-        results = []
-        for i, doc_vec in enumerate(self.doc_vectors):
-            if np.all(doc_vec == 0.0) or np.all(query_vec == 0.0):
-                score = 0.0
-            else:
-                score = self._cosine_similarity(query_vec, doc_vec)
-                
-            # Escalonamento discriminativo para médias de Word2Vec
-            # Similaridades de cosseno cruas geralmente variam entre [0.70, 1.0] para correspondências úteis.
-            # Mapeamos linearmente o intervalo [0.70, 1.0] para [0.0, 1.0]
-            threshold = 0.70
-            if score > threshold:
-                score_scaled = float((score - threshold) / (1.0 - threshold))
-            else:
-                score_scaled = 0.0
-                
-            if score_scaled > 0.05: # filtro mínimo de relevância pós-escalonamento
-                results.append((self.articles[i], score_scaled))
-                
-        results.sort(key=lambda x: x[1], reverse=True)
-        return results[:top_n]
-
-    def _cosine_similarity(self, v1: np.ndarray, v2: np.ndarray) -> float:
-        norm1 = np.linalg.norm(v1)
-        norm2 = np.linalg.norm(v2)
-        if norm1 == 0 or norm2 == 0:
-            return 0.0
-        return np.dot(v1, v2) / (norm1 * norm2)
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 3. OPÇÃO C: SBERT MULTILINGUE PRÉ-TREINADO (COM CACHE DE EMBEDDINGS)
+# 2. OPÇÃO B: SBERT MULTILINGUE PRÉ-TREINADO (COM CACHE DE EMBEDDINGS)
 # ══════════════════════════════════════════════════════════════════════════════
 
 class SBERTSearch:
-    def __init__(self, articles: List[Dict[str, Any]]):
+    """
+    Motor de Pesquisa Semântica Profunda baseado em Transformers (Sentence-BERT).
+    Utiliza arquiteturas siamesas de Deep Learning para gerar representações vetoriais densas (Dense Embeddings),
+    permitindo a recuperação de informação com base no significado médico em vez de palavras isoladas.
+    
+    Implementa caching serializado (pickle) para evitar a recomputação exaustiva dos vetores na CPU.
+    """
+    def __init__(self, articles):
         self.articles = articles
         self.N = len(articles)
         self.cache = {}
@@ -242,7 +174,7 @@ class SBERTSearch:
         except Exception as e:
             print(f"Erro ao salvar cache do SBERT: {e}")
 
-    def update_cache(self) -> int:
+    def update_cache(self):
         """Verifica se há novos artigos e calcula os seus embeddings."""
         if self.N == 0:
             return 0
@@ -270,7 +202,7 @@ class SBERTSearch:
         print("SBERT: Cache de embeddings atualizada com sucesso.")
         return len(missing_articles)
 
-    def search(self, query: str, top_n: int = 5) -> List[Tuple[Dict[str, Any], float]]:
+    def search(self, query, top_n=5):
         if self.N == 0:
             return []
             
@@ -289,24 +221,16 @@ class SBERTSearch:
             pmid = art["pmid"]
             doc_emb = self.cache.get(pmid)
             if doc_emb is not None:
-                score = self._cosine_similarity(query_emb, doc_emb)
-                # Escalonamento discriminativo para SBERT
-                # Mapeamos o intervalo típico [0.35, 0.90] para [0.0, 1.0]
-                threshold = 0.35
-                max_val = 0.90
-                if score > threshold:
-                    score_scaled = float((score - threshold) / (max_val - threshold))
-                    score_scaled = min(score_scaled, 1.0) # Limitar a 100%
-                else:
-                    score_scaled = 0.0
-                    
-                if score_scaled > 0.05:
-                    results.append((art, score_scaled))
+                score = float(self._cosine_similarity(query_emb, doc_emb))
+                # Usamos a Similaridade de Cosseno pura (como ensinado nas aulas e nos tutoriais oficiais Hugging Face)
+                # Adicionamos apenas um filtro mínimo (> 0.10) para excluir lixo matemático.
+                if score > 0.10:
+                    results.append((art, score))
                 
         results.sort(key=lambda x: x[1], reverse=True)
         return results[:top_n]
 
-    def _cosine_similarity(self, v1: np.ndarray, v2: np.ndarray) -> float:
+    def _cosine_similarity(self, v1, v2):
         norm1 = np.linalg.norm(v1)
         norm2 = np.linalg.norm(v2)
         if norm1 == 0 or norm2 == 0:
@@ -318,7 +242,7 @@ class SBERTSearch:
 # FUNÇÃO UNIFICADA DE PESQUISA
 # ══════════════════════════════════════════════════════════════════════════════
 
-def search_articles(query: str, method: str = "tfidf", top_n: int = 5) -> List[Dict[str, Any]]:
+def search_articles(query, method="tfidf", top_n=5):
     """
     Função principal que coordena a pesquisa sobre os artigos guardados em data/artigos.json.
     Retorna a lista de artigos correspondentes, injetando um campo "score" em cada artigo.

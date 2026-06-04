@@ -224,34 +224,7 @@
   {% endfor %}
 </div>
 
-<!-- Controlo de Paginação (Código em Jinja) -->
-{% if total_pages > 1 %}
-<div
-  style="display:flex; justify-content:center; gap:12px; margin-top:32px; padding:20px 0; border-top:1px solid var(--cream-border);">
-  {% if page > 1 %}
-  <a class="btn btn-ghost"
-    href="{{ url_for('pesquisa', q=query, cat=cat_filter, src=src_filter, lang=lang_filter, sort=sort, has_def=1 if has_def else 0, has_syn=1 if has_syn else 0, page=page-1) }}">
-    <i class="fi fi-rr-angle-left"></i> Anterior
-  </a>
-  {% else %}
-  <button class="btn btn-ghost" disabled style="opacity:0.5;cursor:not-allowed;"><i class="fi fi-rr-angle-left"></i>
-    Anterior</button>
-  {% endif %}
 
-  <div style="display:flex; align-items:center; font-size:0.9rem; font-weight:600; color:var(--text-mid);">
-    Página {{ page }} de {{ total_pages }}
-  </div>
-
-  {% if page < total_pages %} <a class="btn btn-ghost"
-    href="{{ url_for('pesquisa', q=query, cat=cat_filter, src=src_filter, lang=lang_filter, sort=sort, has_def=1 if has_def else 0, has_syn=1 if has_syn else 0, page=page+1) }}">
-    Seguinte <i class="fi fi-rr-angle-right"></i>
-    </a>
-    {% else %}
-    <button class="btn btn-ghost" disabled style="opacity:0.5;cursor:not-allowed;">Seguinte <i
-        class="fi fi-rr-angle-right"></i></button>
-    {% endif %}
-</div>
-{% endif %}
 
 {% endif %}
 

@@ -1,6 +1,6 @@
 """
 MedLex Explorer — Módulo de Importação de Artigos Científicos.
-Carrega e simula a recolha de artigos a partir do dataset local de Casos Clínicos da SPMI.
+Realiza Web Scraping no PubMed (via API Entrez) para importar novos artigos e gere a inicialização da base de dados local com os Casos Clínicos da SPMI.
 """
 
 import os
@@ -16,7 +16,7 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 ARTIGOS_PATH = _PROJECT_ROOT / "data" / "artigos.json"
 DATASET_PATH = _PROJECT_ROOT / "dataset_articles.json"
 
-def clean_html(text: str) -> str:
+def clean_html(text):
     """Remove tags HTML e normaliza os espaços em branco."""
     if not text:
         return ""
@@ -25,10 +25,10 @@ def clean_html(text: str) -> str:
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
-def initialize_from_dataset() -> None:
+def initialize_from_dataset():
     """
     Inicializa a base de dados local (artigos.json) com os artigos do dataset_articles.json,
-    filtrando e limpando os dados de acordo com os critérios da Aula 12.
+    filtrando e limpando os dados.
     """
     if not DATASET_PATH.exists():
         print(f"Aviso: dataset_articles.json não encontrado em {DATASET_PATH}")
@@ -43,7 +43,7 @@ def initialize_from_dataset() -> None:
             abstract = doc.get("abstract", "")
             keywords = doc.get("keywords", "")
             
-            # Filtros de qualidade da Aula 12: abstract > 50 e keywords > 1
+            # Filtros de qualidade: abstract > 50 e keywords > 1
             if abstract and len(abstract) > 50 and keywords and len(keywords) > 1:
                 # Filtrar placeholders de resumos não disponíveis
                 if abstract.strip().lower() in ["não aplicável", "na", "não disponivel", "não disponível", "."]:
@@ -79,7 +79,7 @@ def initialize_from_dataset() -> None:
     except Exception as e:
         print(f"Erro ao inicializar artigos a partir do dataset: {e}")
 
-def load_articles() -> List[Dict[str, Any]]:
+def load_articles():
     """Carrega a lista de artigos salvos localmente, inicializando se necessário."""
     need_init = True
     if ARTIGOS_PATH.exists():
@@ -103,7 +103,7 @@ def load_articles() -> List[Dict[str, Any]]:
         print(f"Erro ao carregar artigos: {e}")
         return []
 
-def save_articles(articles: List[Dict[str, Any]]) -> None:
+def save_articles(articles):
     """Guarda a lista de artigos no ficheiro JSON."""
     ARTIGOS_PATH.parent.mkdir(parents=True, exist_ok=True)
     try:
@@ -112,7 +112,7 @@ def save_articles(articles: List[Dict[str, Any]]) -> None:
     except Exception as e:
         print(f"Erro ao guardar artigos: {e}")
 
-def scrape_and_save_articles(query: str, max_results: int = 10) -> int:
+def scrape_and_save_articles(query, max_results=10):
     """
     Realiza o web scraping real no PubMed utilizando a API Entrez E-utilities
     e processa o XML retornado com o BeautifulSoup, extraindo os metadados do artigo.
@@ -123,7 +123,7 @@ def scrape_and_save_articles(query: str, max_results: int = 10) -> int:
         
         # 1. Pesquisa no PubMed para obter IDs de artigos (PMIDs) correspondentes à query
         search_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
-        # Pedimos o dobro de max_results para o caso de termos IDs repetidos
+        # é pedido o dobro de max_results para o caso de termos IDs repetidos
         search_params = {
             "db": "pubmed",
             "term": query,
@@ -158,7 +158,7 @@ def scrape_and_save_articles(query: str, max_results: int = 10) -> int:
                 r_fetch = requests.get(fetch_url, params=fetch_params, timeout=10)
                 r_fetch.raise_for_status()
                 
-                # Usamos BeautifulSoup com parser 'xml' tal como nas aulas (BeautifulSoup + requests)
+                # Usamos BeautifulSoup com parser 'xml'  (BeautifulSoup + requests)
                 soup = BeautifulSoup(r_fetch.text, "xml")
                 
                 # Extrair o Título (ArticleTitle)
@@ -173,7 +173,7 @@ def scrape_and_save_articles(query: str, max_results: int = 10) -> int:
                 if not abstract or len(abstract) <= 50:
                     continue
                     
-                # ---------------- BÓNUS EXTRA: TRADUÇÃO AUTOMÁTICA ----------------
+                # ---------------- TRADUÇÃO AUTOMÁTICA ----------------
                 try:
                     from deep_translator import GoogleTranslator
                     translator = GoogleTranslator(source='en', target='pt')
@@ -228,7 +228,7 @@ def scrape_and_save_articles(query: str, max_results: int = 10) -> int:
                 # Extrair Palavras-chave (Keyword)
                 keyword_nodes = soup.find_all("Keyword")
                 keywords_list = [k.text.strip() for k in keyword_nodes if k.text]
-                # Se não houver palavras-chave na API, usamos a própria query de pesquisa como tópico
+                # Se não houver palavras-chave na API, usa a própria query de pesquisa como tópico
                 keywords = ", ".join(keywords_list) if keywords_list else query
                 
                 # Adicionar artigo estruturado

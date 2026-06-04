@@ -1,3 +1,11 @@
+"""
+MedLex Explorer — Orquestrador Central (Backend Flask).
+Mapeamento de Rotas:
+- Navegação Web: /, /dashboard, /pesquisa, /gestao, /ir_qa
+- Operações de Mutação (CRUD): /gestao/add, /gestao/update, /gestao/delete
+- Endpoints Assíncronos (API REST): /api/enrich, /api/scrape, /api/qa
+"""
+
 from flask import Flask, render_template, request, redirect, url_for, flash
 import json
 import os
@@ -11,7 +19,7 @@ from markupsafe import Markup
 import string
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Configurações e Dados (Antigo data_manager.py)
+# Configurações do Servidor e Gestão de Cache em Memória RAM (Lazy Loading)
 # ══════════════════════════════════════════════════════════════════════════════
 
 app = Flask(__name__)
@@ -35,16 +43,28 @@ DATA_PATH = _PROJECT_ROOT / "DICIONARIO_GIGANTE_FINAL.json"
 _cache = None
 
 def _load_raw():
+    """
+    Carrega o ficheiro JSON gigante do disco para a memória.
+    Executado apenas uma vez no arranque do servidor para inicializar a cache.
+    """
     with open(DATA_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
 def get_data():
+    """
+    Retorna o dicionário de conceitos médicos a partir da cache em memória RAM.
+    Implementa uma estratégia de Lazy Loading para otimização de latência.
+    """
     global _cache
     if _cache is None:
         _cache = _load_raw()
     return _cache
 
 def save_data(data):
+    """
+    Persiste o estado atual da memória para o disco rígido em formato JSON UTF-8.
+    Assegura a sincronização bidirecional e preserva a codificação de diacríticos.
+    """
     global _cache
     with open(DATA_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -88,6 +108,10 @@ def get_all_sources():
     return sorted(sources)
 
 def get_stats():
+    """
+    Agrega as estatísticas globais do dataset para apresentação na Dashboard.
+    Calcula coberturas, contagens de idioma, fontes e top 15 categorias mais frequentes.
+    """
     data = get_data()
     total = len(data)
     with_def  = sum(1 for e in data.values() if e.get("definicoes"))
@@ -141,6 +165,11 @@ def split_space(s):
     return [x.strip() for x in s.split() if x.strip()]
 
 def score_entry(key, entry, q):
+    """
+    Algoritmo heurístico de relevância lexical para a pesquisa livre.
+    Atribui pesos diferenciados de acordo com o campo onde a correspondência ocorre:
+    ID (10) > Termo (8) > Sinónimo (6) > Definição (4) > Tradução (3).
+    """
     q = q.lower()
     score = 0
     if q in key:                                              
@@ -193,7 +222,7 @@ def dashboard():
             if vals and lang and lang != ",":
                 lang_counts[lang] = lang_counts.get(lang, 0) + 1
 
-    # Agrupamos línguas: mantemos apenas as top 5 e o resto vai para "Outras"
+    # Agrupa línguas: mantem apenas as top 5 e o resto vai para "Outras"
     lang_sorted = sorted(lang_counts.items(), key=lambda x: x[1], reverse=True)
     lang_labels, lang_values = [], []
     outras = 0
@@ -434,8 +463,12 @@ def gestao_delete():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# API de Enriquecimento
+# Endpoints RESTful para Processamento Assíncrono (AJAX/Fetch)
 # ══════════════════════════════════════════════════════════════════════════════
+# Estes endpoints não recarregam a página inteira, apenas devolvem dados JSON 
+# em tempo real para a interface 
+
+# Serviço de Enriquecimento Terminológico (API)
 
 @app.get("/api/enrich")
 def api_enrich():
@@ -476,7 +509,7 @@ def ir_qa():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# API de Web Scraping do PubMed
+# Serviço de Ingestão de Artigos do PubMed (Web Scraping API)
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.post("/api/scrape")
@@ -505,7 +538,7 @@ def api_scrape():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# API de Question Answering (Fase 4)
+# Serviço de Inteligência Artificial para Respostas Exatas (QA API)
 # ══════════════════════════════════════════════════════════════════════════════
 
 @app.post("/api/qa")
