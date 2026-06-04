@@ -9,6 +9,9 @@ import requests
 import json
 import time
 from typing import Dict, List, Any, Optional
+from pathlib import Path
+import sys
+from utils.data_manager import get_data, save_data
 
 # Cabeçalho User-Agent recomendado pelas políticas da Wikimedia/Wikidata
 HEADERS = {
@@ -221,10 +224,8 @@ def batch_enrich(limit=10, force=False):
       (HTTP 429 Too Many Requests) nos servidores da Wikimedia.
     - Se 'force=True', ignora a verificação de propriedades vazias e força a sincronização.
     """
-    from pathlib import Path
-    import sys
+   
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from utils.data_manager import get_data, save_data
     
     data = get_data()
     count = 0
@@ -306,7 +307,6 @@ def batch_enrich(limit=10, force=False):
 
 if __name__ == "__main__":
     # Teste rápido do script
-    import sys
     if len(sys.argv) > 1:
         term_to_test = sys.argv[1]
         print(f"Testando enriquecimento de: '{term_to_test}'")

@@ -208,14 +208,14 @@ def dashboard():
     stats = get_stats()
 
     # Dados para os gráficos — enviados como listas para o Jinja → JS
-    top_cats    = stats["top_categorias"]
-    cat_labels  = [c[0] for c in top_cats]
-    cat_values  = [c[1] for c in top_cats]
+    top_cats = stats["top_categorias"]
+    cat_labels = [c[0] for c in top_cats]
+    cat_values = [c[1] for c in top_cats]
 
-    data        = get_data()
-    lang_map    = {"pt": "Português", "en": "Inglês", "es": "Espanhol",
-                   "fr": "Francês",   "la": "Latim",  "ar": "Árabe",
-                   "de": "Alemão",    "zh": "Chinês",  "ja": "Japonês"}
+    data = get_data()
+    lang_map = {"pt": "Português", "en": "Inglês", "es": "Espanhol",
+                "fr": "Francês",   "la": "Latim",  "ar": "Árabe",
+                "de": "Alemão",    "zh": "Chinês",  "ja": "Japonês"}
     lang_counts = {}
     for entry in data.values():
         for lang, vals in entry.get("traducoes", {}).items():
@@ -236,9 +236,9 @@ def dashboard():
         lang_labels.append("Outras")
         lang_values.append(outras)
 
-    src_sorted  = stats["src_counts"]
-    src_labels  = [s[0] for s in src_sorted]
-    src_values  = [s[1] for s in src_sorted]
+    src_sorted = stats["src_counts"]
+    src_labels = [s[0] for s in src_sorted]
+    src_values = [s[1] for s in src_sorted]
 
     return render_template(
         "dashboard.html",
@@ -256,17 +256,17 @@ def dashboard():
 
 @app.get("/pesquisa")
 def pesquisa():
-    data        = get_data()
-    all_cats    = get_all_categories()
-    all_srcs    = get_all_sources()
+    data = get_data()
+    all_cats = get_all_categories()
+    all_srcs = get_all_sources()
 
-    query       = request.args.get("q", "").strip()
-    cat_filter  = request.args.get("cat", "")
-    src_filter  = request.args.get("src", "")
+    query = request.args.get("q", "").strip()
+    cat_filter = request.args.get("cat", "")
+    src_filter = request.args.get("src", "")
     lang_filter = request.args.get("lang", "")
-    sort        = request.args.get("sort", "rel")
-    has_def     = bool(request.args.get("has_def"))
-    has_syn     = bool(request.args.get("has_syn"))
+    sort = request.args.get("sort", "rel")
+    has_def = bool(request.args.get("has_def"))
+    has_syn = bool(request.args.get("has_syn"))
 
     alphabet    = list(string.ascii_uppercase)
     results = []
@@ -380,11 +380,11 @@ def gestao_add():
         return redirect(url_for("gestao"))
 
     entry = {
-        "termo_principal":  termo,
-        "categorias":       split_space(request.form.get("categorias", "")),
-        "definicoes":       [request.form["definicao"].strip()] if request.form.get("definicao", "").strip() else [],
-        "sinonimos":        split_comma(request.form.get("sinonimos", "")),
-        "siglas":           split_comma(request.form.get("siglas", "")),
+        "termo_principal": termo,
+        "categorias": split_space(request.form.get("categorias", "")),
+        "definicoes": [request.form["definicao"].strip()] if request.form.get("definicao", "").strip() else [],
+        "sinonimos": split_comma(request.form.get("sinonimos", "")),
+        "siglas": split_comma(request.form.get("siglas", "")),
         "termos_relacionados": split_comma(request.form.get("termos_rel", "")),
         "traducoes": {
             "pt": split_comma(request.form.get("pt", "")),
@@ -408,22 +408,22 @@ def gestao_add():
 
 @app.post("/gestao/update")
 def gestao_update():
-    key   = request.form.get("key", "")
+    key = request.form.get("key", "")
     termo = request.form.get("termo", "").strip()
 
-    data  = get_data()
+    data = get_data()
     if key not in data:
         flash("Termo não encontrado.", "danger")
         return redirect(url_for("gestao", tab="edit"))
 
     entry = data[key].copy()
-    entry["termo_principal"]    = termo
-    entry["categorias"]         = split_space(request.form.get("categorias", ""))
-    entry["definicoes"]         = [request.form["definicao"].strip()] if request.form.get("definicao", "").strip() else []
-    entry["sinonimos"]          = split_comma(request.form.get("sinonimos", ""))
-    entry["siglas"]             = split_comma(request.form.get("siglas", ""))
-    entry["termos_relacionados"]= split_comma(request.form.get("termos_rel", ""))
-    entry["traducoes"]          = {
+    entry["termo_principal"] = termo
+    entry["categorias"] = split_space(request.form.get("categorias", ""))
+    entry["definicoes"] = [request.form["definicao"].strip()] if request.form.get("definicao", "").strip() else []
+    entry["sinonimos"] = split_comma(request.form.get("sinonimos", ""))
+    entry["siglas"] = split_comma(request.form.get("siglas", ""))
+    entry["termos_relacionados"] = split_comma(request.form.get("termos_rel", ""))
+    entry["traducoes"] = {
         "pt": split_comma(request.form.get("pt", "")),
         "en": split_comma(request.form.get("en", "")),
         "es": split_comma(request.form.get("es", "")),
@@ -439,8 +439,8 @@ def gestao_update():
 
 @app.post("/gestao/delete")
 def gestao_delete():
-    key      = request.form.get("key", "")
-    confirm  = request.form.get("confirm")
+    key = request.form.get("key", "")
+    confirm = request.form.get("confirm")
     next_url = request.form.get("next_url")
 
     if not confirm:
