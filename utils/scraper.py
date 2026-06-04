@@ -14,11 +14,21 @@ ARTIGOS_PATH = _PROJECT_ROOT / "data" / "artigos.json"
 DATASET_PATH = _PROJECT_ROOT / "dataset_articles.json"
 
 def clean_html(text):
-    """Remove tags HTML e normaliza os espaços em branco."""
+    """Remove tags HTML, CSS injetado de SVGs, links e normaliza os espaços em branco."""
     if not text:
         return ""
+    
+    # 1. Remover lixo CSS injetado de SVGs (ex: .st0{fill:#A6CE39;})
+    text = re.sub(r'\.st\d+\{.*?\}', '', text)
+    
+    # 2. Remover links indesejados (ex: https://orcid.org/...)
+    text = re.sub(r'https?://[^\s]+', '', text)
+    
+    # 3. Remover tags HTML
     clean = re.compile('<.*?>')
     text = re.sub(clean, '', text)
+    
+    # 4. Normalizar espaços
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
