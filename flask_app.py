@@ -280,18 +280,8 @@ def pesquisa():
     elif sort == "za":
         results.sort(key=lambda x: x[0], reverse=True)
 
-    page = request.args.get("page", 1, type=int)
     total_results = len(results)
-    total_pages = (total_results + PAGE_SIZE - 1) // PAGE_SIZE
-    
-    # Validação de limites
-    if page < 1: page = 1
-    if page > total_pages and total_pages > 0: page = total_pages
-        
-    start_idx = (page - 1) * PAGE_SIZE
-    end_idx = start_idx + PAGE_SIZE
-    
-    page_results = [(k, e) for k, e, _ in results[start_idx:end_idx]]
+    page_results = [(k, e) for k, e, _ in results]
 
     return render_template(
         "pesquisa.html",
@@ -304,8 +294,8 @@ def pesquisa():
         all_cats=all_cats, all_srcs=all_srcs,
         results=page_results,
         total=total_results,
-        page=page,
-        total_pages=total_pages,
+        page=1,
+        total_pages=1,
     )
 
 

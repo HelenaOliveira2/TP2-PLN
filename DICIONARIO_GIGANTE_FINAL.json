@@ -4,21 +4,26 @@
     "genero": "a",
     "categorias": [
       "Fisioloxía",
-      "lei da conservação da energia"
+      "lei",
+      "da",
+      "conservação",
+      "da",
+      "energia",
+      "lei_da_conservação_da_energia"
     ],
     "traducoes": {
-      "es": [
-        "a término",
-        "primer principio de la termodinámica",
-        "primera ley de la termodinámica"
+      "pt": [
+        "a termo"
       ],
       "en": [
         "full term",
         "first law of thermodynamics",
         "conservation of energy"
       ],
-      "pt": [
-        "a termo"
+      "es": [
+        "a término",
+        "primer principio de la termodinámica",
+        "primera ley de la termodinámica"
       ]
     },
     "fontes": [
@@ -26,7 +31,10 @@
     ],
     "definicoes": [
       "primeira lei"
-    ]
+    ],
+    "sinonimos": [],
+    "siglas": [],
+    "termos_relacionados": []
   },
   "abandono": {
     "termo_principal": "Abandono",
@@ -78458,6 +78466,7 @@
       "Osteoproteção"
     ],
     "siglas": [],
+    "termos_relacionados": [],
     "traducoes": {
       "pt": [
         "ensinar sobre prevenção da osteoporose"
