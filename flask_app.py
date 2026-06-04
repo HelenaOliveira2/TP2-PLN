@@ -8,7 +8,6 @@ Mapeamento de Rotas:
 
 from flask import Flask, render_template, request, redirect, url_for, flash
 import json
-import os
 from pathlib import Path
 from utils.enricher import enrich_term_data
 from utils.scraper import scrape_and_save_articles, load_articles

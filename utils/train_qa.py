@@ -42,9 +42,6 @@ dados_medicos = {
     ]
 }
 
-#raw_datasets = load_dataset("squad_v1_pt")
-#squad = Dataset.from_dict(raw_datasets)
-
 # -----------------------------------------------------------------------------
 # PASSO 1: CARREGAMENTO DO DATASET
 # Em vez de carregar um dataset genérico (ex: "squad" em inglês) via HuggingFace Hub,
@@ -167,7 +164,6 @@ trainer = Trainer(
     args=training_args,
     train_dataset=tokenized_squad["train"],
     eval_dataset=tokenized_squad["test"],
-    #tokenizer=tokenizer,
     data_collator=data_collator,
 )
 

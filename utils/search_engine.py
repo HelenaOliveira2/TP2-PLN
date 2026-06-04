@@ -3,18 +3,14 @@ MedLex Explorer — Motores de Pesquisa Científica (IR).
 Implementa pesquisa por TF-IDF (de raiz) e SBERT.
 """
 
-import os
-import json
 import math
 import pickle
 import re
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
 import numpy as np
 
 # Caminhos de dados
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
-ARTIGOS_PATH = _PROJECT_ROOT / "data" / "artigos.json"
 SBERT_CACHE_PATH = _PROJECT_ROOT / "data" / "artigos_embeddings_sbert.pkl"
 
 # Lazy loader para SBERT (carrega apenas quando necessário)

@@ -2,12 +2,9 @@
 MedLex Explorer — Módulo de Importação de Artigos Científicos.
 Realiza Web Scraping no PubMed (via API Entrez) para importar novos artigos e gere a inicialização da base de dados local com os Casos Clínicos da SPMI.
 """
-
-import os
 import json
 import re
 from pathlib import Path
-from typing import List, Dict, Any
 import requests
 from bs4 import BeautifulSoup
 

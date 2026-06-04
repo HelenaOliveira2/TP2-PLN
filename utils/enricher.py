@@ -4,14 +4,9 @@ Este módulo liga a aplicação às APIs do Wikidata e da Wikipedia para recolhe
 informações médicas automaticamente. O seu objetivo é preencher os termos do 
 nosso dicionário local (JSON) com definições, sinónimos, categorias e traduções.
 """
-
 import requests
 import json
-import time
-from typing import Dict, List, Any, Optional
-from pathlib import Path
 import sys
-from utils.data_manager import get_data, save_data
 
 # Cabeçalho User-Agent recomendado pelas políticas da Wikimedia/Wikidata
 HEADERS = {
@@ -208,102 +203,6 @@ def enrich_term_data(term):
             enrichment["definicao"] = wiki_desc
             
     return enrichment
-
-# ══════════════════════════════════════════════════════════════════════════════
-# Script CLI para enriquecimento em lote (Batch Mode)
-# ══════════════════════════════════════════════════════════════════════════════
-
-def batch_enrich(limit=10, force=False):
-    """
-    Enriquecimento assíncrono em lote do dataset inteiro.
-    Analisa os metadados de todos os termos presentes no dicionário local em memória.
-    
-    Estratégia de Processamento:
-    - Executa um 'Merge' seguro (Fusão de Dados), preservando os dados pré-existentes.
-    - Realiza chamadas limitadas pela variável 'limit' para evitar o bloqueio por Rate Limiting 
-      (HTTP 429 Too Many Requests) nos servidores da Wikimedia.
-    - Se 'force=True', ignora a verificação de propriedades vazias e força a sincronização.
-    """
-   
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    
-    data = get_data()
-    count = 0
-    
-    print(f"A iniciar enriquecimento em lote (limite={limit}, forçar={force})...")
-    
-    for key, entry in data.items():
-        if count >= limit:
-            break
-            
-        # O 'termo' atua como a chave primária da pesquisa 
-        term = entry.get("termo_principal", key)
-        has_def = bool(entry.get("definicoes"))
-        has_syn = bool(entry.get("sinonimos"))
-        
-        # Otimização: Saltar termos que já possuem definição, evitando pedidos HTTP redundantes
-        # A menos que o parâmetro 'force' seja invocado explicitamente
-        if not has_def or force:
-            print(f"A processar termo: '{term}'...")
-            enrichment = enrich_term_data(term)
-            
-            updated = False
-            
-            # Gestão da Definição: Injetar a definição capturada sem sobrescrever edições manuais antigas
-            if enrichment["definicao"]:
-                if not entry.get("definicoes"):
-                    entry["definicoes"] = [enrichment["definicao"]]
-                elif force:
-                    # Inserção da nova definição no início da lista para prioridade de visualização
-                    if enrichment["definicao"] not in entry["definicoes"]:
-                        entry["definicoes"].insert(0, enrichment["definicao"])
-                updated = True
-                
-            # Fusão de Sinónimos: Garante que não há duplicação de entidades
-            if enrichment["sinonimos"]:
-                existing_syns = entry.get("sinonimos", [])
-                for syn in enrichment["sinonimos"]:
-                    if syn.lower() != term.lower() and syn not in existing_syns:
-                        existing_syns.append(syn)
-                entry["sinonimos"] = existing_syns
-                updated = True
-                
-            # Fusão de Categorias Taxonómicas
-            if enrichment["categorias"]:
-                existing_cats = entry.get("categorias", [])
-                for cat in enrichment["categorias"]:
-                    # Dividir e limpar termos
-                    clean_cat = cat.strip()
-                    if clean_cat and clean_cat not in existing_cats:
-                        existing_cats.append(clean_cat)
-                entry["categorias"] = existing_cats
-                updated = True
-                
-            # Sincronização de Traduções
-            for lang in ["en", "es"]:
-                if enrichment["traducoes"][lang]:
-                    trads = entry.setdefault("traducoes", {})
-                    existing_lang_trads = trads.setdefault(lang, [])
-                    # Se for string em vez de lista por algum motivo
-                    if isinstance(existing_lang_trads, str):
-                        existing_lang_trads = [x.strip() for x in existing_lang_trads.split(",") if x.strip()]
-                    
-                    for t in enrichment["traducoes"][lang]:
-                        if t not in existing_lang_trads:
-                            existing_lang_trads.append(t)
-                    trads[lang] = existing_lang_trads
-                    updated = True
-            
-            if updated:
-                count += 1
-                # Pequena pausa para respeitar limites da API
-                time.sleep(0.5)
-                
-    if count > 0:
-        save_data(data)
-        print(f"Sucesso: {count} termos enriquecidos e guardados em DICIONARIO_GIGANTE_FINAL.json.")
-    else:
-        print("Nenhum termo a enriquecer ou limite atingido sem modificações.")
 
 if __name__ == "__main__":
     # Teste rápido do script

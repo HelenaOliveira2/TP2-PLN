@@ -3,9 +3,6 @@ MedLex Explorer — Motor de Question Answering.
 Utiliza a arquitetura BERT (fine-tuned localmente) para extração de respostas contextuais.
 Permite aos utilizadores fazer perguntas em Português sobre os resumos traduzidos para Português.
 """
-
-from typing import Dict, Any, Optional
-
 import os
 import torch
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering
